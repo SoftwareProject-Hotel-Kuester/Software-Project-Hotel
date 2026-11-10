@@ -24,3 +24,28 @@ hs_err_pid*
 replay_pid*
 
 .idea
+target/
+src/main/frontend/generated/
+src/main/bundles/
+node_modules/
+vite.generated.ts
+
+HELP.md
+
+# Eclipse und Spring Tool Suite
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# IntelliJ
+*.iws
+*.iml
+*.ipr
+
+# VS Code und Systemdateien
+.vscode/
+.DS_Store

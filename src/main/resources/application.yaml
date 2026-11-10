@@ -1,0 +1,16 @@
+vaadin:
+  launch-browser: true   # öffnet beim Start automatisch den Browser
+
+spring:
+  application:
+    name: hotelverwaltung
+  jpa:
+    hibernate:
+      # Hibernate legt die Tabellen aus den Entity-Klassen an und passt sie bei
+      # Änderungen an. Nur für die Entwicklung gedacht.
+      ddl-auto: update
+    show-sql: true       # zeigt die SQL-Befehle in der Konsole
+  mail:
+    # Verbindung zu Mailpit aus der compose.yaml
+    host: localhost
+    port: 1025
