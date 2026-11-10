@@ -1,0 +1,63 @@
+@startuml
+hide footbox
+actor Mitarbeiter
+boundary ZimmerManagementUI
+control FacilityService
+database "Datenbank" as DB
+entity "z: Zimmer" as Zimmer
+entity "d: Defektmeldung" as Defektmeldung
+
+== 1. Gesperrte Zimmer anzeigen ==
+Mitarbeiter -> ZimmerManagementUI: öffneGesperrteZimmerAnsicht()
+activate ZimmerManagementUI
+
+ZimmerManagementUI -> FacilityService: ladeGesperrteZimmer()
+activate FacilityService
+FacilityService -> DB: findZimmerByStatus(GESPERRT)
+activate DB
+DB --> FacilityService: liste(z)
+deactivate DB
+FacilityService --> ZimmerManagementUI: liste(z)
+deactivate FacilityService
+
+Mitarbeiter <-- ZimmerManagementUI: zeigt gesperrte Zimmer inkl. Sperrgrund
+deactivate ZimmerManagementUI
+
+== 2. Sperre aufheben ==
+Mitarbeiter -> ZimmerManagementUI: klickAufFreigeben(zimmerNr)
+activate ZimmerManagementUI
+
+ZimmerManagementUI -> FacilityService: zimmerFreigeben(zimmerNr)
+activate FacilityService
+
+FacilityService -> Zimmer: sperreAufheben()
+activate Zimmer
+
+Zimmer -> Defektmeldung: alsErledigtMarkieren()
+activate Defektmeldung
+Defektmeldung -> Defektmeldung: erledigt = true
+Defektmeldung --> Zimmer: ok
+deactivate Defektmeldung
+
+Zimmer -> Zimmer: zimmerstatus = NICHT_BELEGT
+Zimmer -> Zimmer: reinigungsstatus = ZU_REINIGEN
+Zimmer -> Zimmer: sperrgrund = null
+
+Zimmer --> FacilityService: statusAktualisiert
+deactivate Zimmer
+
+FacilityService -> DB: update(z)
+activate DB
+DB --> FacilityService: ok
+deactivate DB
+FacilityService -> DB: update(d)
+activate DB
+DB --> FacilityService: ok
+deactivate DB
+
+FacilityService --> ZimmerManagementUI: erfolg
+deactivate FacilityService
+
+ZimmerManagementUI --> Mitarbeiter: blendeZimmerAusDerListeAus()
+deactivate ZimmerManagementUI
+@enduml

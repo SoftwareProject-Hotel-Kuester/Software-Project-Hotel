@@ -1,0 +1,65 @@
+@startuml
+hide footbox
+actor Gast
+boundary GästeportalUI
+control BuchungService
+entity "z: Zimmer" as Zimmer
+entity "p: Preis" as Preis
+entity "b: Buchung" as Buchung
+database "Datenbank" as DB
+
+== 1. Zimmersuche ==
+activate Gast
+Gast -> GästeportalUI: suche(anreise, abreise, zimmerklasse)
+activate GästeportalUI
+
+GästeportalUI -> GästeportalUI: validiereDatum(anreise < abreise)
+GästeportalUI -> BuchungService: findeFreieZimmer(anreise, abreise, zimmerklasse)
+activate BuchungService
+
+BuchungService -> Zimmer: istVerfuegbar(anreise, abreise)
+activate Zimmer
+Zimmer --> BuchungService: true
+deactivate Zimmer
+
+BuchungService -> DB: ladePreis(zimmerklasse, anreise)
+activate DB
+DB --> BuchungService: p (Preis-Objekt)
+deactivate DB
+
+BuchungService --> GästeportalUI: zeigeZimmerListe(z, p)
+deactivate BuchungService
+
+Gast <-- GästeportalUI: zeigt verfügbare Zimmer inkl. Preis an
+deactivate GästeportalUI
+
+== 2. Buchungsabschluss ==
+Gast -> GästeportalUI: zimmerAuswählenUndBuchen()
+activate GästeportalUI
+
+GästeportalUI -> BuchungService: buchungAbschliessen(gast, z, anreise, abreise)
+activate BuchungService
+
+BuchungService -> Buchung: <<create>> (anreise, abreise, gast, z)
+activate Buchung
+BuchungService -> Buchung: berechnePreis(p)
+Buchung -> Preis: giltAm(anreise)
+activate Preis
+Preis --> Buchung: true
+deactivate Preis
+Buchung -> Buchung: gesamtpreis = kalkulierterWert
+Buchung -> Buchung: status = GEBUCHT
+Buchung --> BuchungService: b
+deactivate Buchung
+
+BuchungService -> DB: speichere(b)
+activate DB
+DB --> BuchungService: ok
+deactivate DB
+
+BuchungService --> GästeportalUI: buchungsBestätigung(buchungsNr)
+deactivate BuchungService
+
+GästeportalUI --> Gast: zeigeErfolg()
+deactivate GästeportalUI
+@enduml

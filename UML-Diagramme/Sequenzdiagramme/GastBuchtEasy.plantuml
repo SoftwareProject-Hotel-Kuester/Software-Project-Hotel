@@ -1,0 +1,50 @@
+@startuml
+hide footbox
+actor Gast
+boundary GästeportalUI
+control BuchungService
+entity "z: Zimmer" as Zimmer
+entity "b: Buchung" as Buchung
+
+activate Gast
+Gast -> GästeportalUI: suchdatenEingeben(anreise, abreise)
+activate GästeportalUI
+
+GästeportalUI -> BuchungService: prüfeVerfügbarkeit(anreise, abreise)
+activate BuchungService
+
+BuchungService -> Zimmer: istVerfuegbar(anreise, abreise)
+activate Zimmer
+Zimmer --> BuchungService: true
+deactivate Zimmer
+
+BuchungService --> GästeportalUI: zeigeZimmerAuswahl()
+deactivate BuchungService
+
+' UI wird deaktiviert, da das System auf die Entscheidung des Gastes wartet
+deactivate GästeportalUI
+
+Gast -> GästeportalUI: zimmerAuswählenUndBuchen()
+activate GästeportalUI
+
+GästeportalUI -> BuchungService: buchungAbschliessen(gast, zimmer)
+activate BuchungService
+
+BuchungService -> Buchung: <<create>> (anreise, abreise, gast, zimmer)
+activate Buchung
+Buchung -> Buchung: berechnePreis(p)
+activate Buchung
+deactivate Buchung
+Buchung -> Buchung: status = GEBUCHT
+activate Buchung
+deactivate Buchung
+Buchung --> BuchungService: b
+deactivate Buchung
+
+BuchungService --> GästeportalUI: buchungsBestätigung(b)
+deactivate BuchungService
+
+GästeportalUI --> Gast: zeigeErfolg()
+deactivate GästeportalUI
+deactivate Gast
+@enduml

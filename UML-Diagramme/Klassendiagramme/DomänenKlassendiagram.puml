@@ -1,0 +1,219 @@
+@startuml Domaenenklassendiagramm_Hotelverwaltung
+title Domänenklassendiagramm Hotelverwaltung
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam nodesep 110
+skinparam ranksep 70
+skinparam class {
+    BackgroundColor White
+    BorderColor #444444
+    ArrowColor #444444
+}
+skinparam packageStyle rectangle
+hide empty members
+
+' ---------- Benutzer ----------
+abstract class Benutzer #E8F0FE {
+    - vorname: String
+    - nachname: String
+    - email: String
+    - telefon: String
+    - passwort: String
+    + anmelden(email: String, passwort: String): boolean
+    + abmelden(): void
+    + passwortAendern(alt: String, neu: String): void
+}
+
+class Adresse #E8F0FE {
+    - plz: int
+    - ort: String
+    - strasse: String
+    - hausnummer: String
+    - land: String
+}
+
+class Gast #E8F0FE {
+    - gastNr: int
+    - geburtsdatum: LocalDate
+    - hatKonto: boolean
+    + registrieren(email: String, passwort: String): void
+    + profilBearbeiten(email: String, telefon: String, adresse: String, praeferenzen: String): void
+    + stammdatenAendern(vorname: String, nachname: String, geburtsdatum: LocalDate): void
+    + zeigeEigeneBuchungen(): List<Buchung>
+    + zeigeAufenthaltshistorie(): List<Buchung>
+}
+
+class Mitarbeiter #E8F0FE {
+    - personalNr: int
+    - rolle: Rolle
+    - eintrittsdatum: LocalDate
+    - austrittsdatum: LocalDate
+    + bearbeiten(vorname: String, nachname: String, email: String, telefon: String): void
+    + deaktivieren(austrittsdatum: LocalDate): void
+    + rolleAendern(neu: Rolle): void
+    + istHotelleitung(): boolean
+}
+
+' ---------- Zimmer und Preise ----------
+class Zimmer #E6F4EA {
+    - zimmerNr: int
+    - etage: int
+    - belegungsart: Belegungsart
+    - zimmerklasse: Zimmerklasse
+    - ausstattung: String
+    - zimmerstatus: Zimmerstatus
+    - reinigungsstatus: Reinigungsstatus
+    + aendern(belegungsart: Belegungsart, zimmerklasse: Zimmerklasse, ausstattung: String): void
+    + istVerfuegbar(von: LocalDate, bis: LocalDate): boolean
+    + hatKuenftigeBuchungen(): boolean
+    + reinigungsstatusAendern(neu: Reinigungsstatus): void
+    + sperren(meldung: Defektmeldung): void
+    + sperreAufheben(): void
+    + istBelegt(): boolean
+}
+
+class Preis #E6F4EA {
+    - nachtpreis: BigDecimal
+    - zimmerklasse: Zimmerklasse
+    - belegungsart: Belegungsart
+    + aendern(neuerNachtpreis: BigDecimal): void
+}
+
+class Defektmeldung #E6F4EA {
+    - meldungNr: int
+    - beschreibung: String
+    - gemeldetAm: LocalDate
+    - erledigt: boolean
+    + alsErledigtMarkieren(): void
+}
+
+class Reinigungsliste #E6F4EA {
+    - datum: LocalDate
+    + zimmerHinzufuegen(zimmer: Zimmer): void
+    + versenden(): void
+    + statusAktualisieren(): void
+}
+
+' ---------- Buchung ----------
+class Buchung #FEF7E0 {
+    - buchungsNr: int
+    - anreise: LocalDate
+    - abreise: LocalDate
+    - gesamtpreis: BigDecimal
+    - status: Buchungsstatus
+    - erstelltAm: LocalDate
+    + anzahlNaechte(): int
+    + berechnePreis(preis: Preis): BigDecimal
+    + aendern(anreise: LocalDate, abreise: LocalDate): void
+    + stornieren(): void
+    + einchecken(): void
+    + auschecken(): void
+}
+
+' ---------- Auswertung ----------
+class Statistik #FCE8E6 {
+    - zeitraumVon: LocalDate
+    - zeitraumBis: LocalDate
+    - auswertungsart: Auswertungsart
+    - zimmerklasse: Zimmerklasse
+    - auslastung: double
+    - gaestezahl: int
+    - umsatz: BigDecimal
+    - kosten: BigDecimal
+    + berechnen(buchungen: List<Buchung>, kostenposten: List<Kostenposten>): void
+    + zeigeStatistik(): void
+    + exportieren(format: Exportformat): void
+}
+
+class Kostenposten #FCE8E6 {
+    - kostenNr: int
+    - zeitraumVon: LocalDate
+    - zeitraumBis: LocalDate
+    - zimmerklasse: Zimmerklasse
+    - betrag: BigDecimal
+    + berechnen(belegteNaechte: int, unbelegteNaechte: int, satz: Kostensatz): BigDecimal
+}
+
+class Kostensatz #FCE8E6 {
+    - zimmerklasse: Zimmerklasse
+    - kostenProNachtBelegt: BigDecimal
+    - kostenProNachtUnbelegt: BigDecimal
+    + aendern(belegt: BigDecimal, unbelegt: BigDecimal): void
+}
+
+' ---------- Aufzählungen ----------
+package "Aufzählungen (Enums)" #F5F5F5 {
+    enum Rolle {
+        MITARBEITER
+        HOTELLEITUNG
+    }
+    enum Belegungsart {
+        EINZEL
+        DOPPEL
+        FAMILIE
+    }
+    enum Zimmerklasse {
+        ECONOMY
+        STANDARD
+        PREMIUM
+    }
+    enum Zimmerstatus {
+        BELEGT
+        NICHT_BELEGT
+        GESPERRT
+    }
+    enum Reinigungsstatus {
+        GEREINIGT
+        ZU_REINIGEN
+        NICHT_REINIGEN
+    }
+    enum Buchungsstatus {
+        GEBUCHT
+        EINGECHECKT
+        AUSGECHECKT
+        STORNIERT
+    }
+    enum Auswertungsart {
+        GAESTEZAHL
+        UMSATZ
+        KOSTEN
+        AUSLASTUNG
+    }
+    enum Exportformat {
+        EXCEL
+        CSV
+        PDF
+    }
+}
+
+' ---------- Vererbung ----------
+Benutzer <|-- Gast
+Benutzer <|-- Mitarbeiter
+
+' ---------- Assoziationen ----------
+Benutzer "1" -- "1" Adresse : wohnt an
+Gast "1" -down- "0..*" Buchung : bucht
+Buchung "0..*" -left- "1" Zimmer : belegt
+Gast "1" -left- "0..*" Defektmeldung : meldet
+Defektmeldung "0..1" -down- "1" Zimmer : betrifft
+Reinigungsliste "0..*" -up- "1..*" Zimmer : enthält
+
+' ---------- Abhängigkeiten ----------
+Buchung .right.> Preis : berechnet mit
+Statistik .up.> Buchung : wertet aus
+Statistik .right.> Kostenposten : wertet aus
+Kostenposten .down.> Kostensatz : nutzt
+
+' ---------- Anordnung (unsichtbar) ----------
+Gast -[hidden]right- Mitarbeiter
+Reinigungsliste -[hidden]down- Rolle
+Statistik -[hidden]down- Exportformat
+
+note bottom of Preis
+  Preis gehört zu keinem einzelnen Zimmer. Er gilt für
+  eine Kombination aus Zimmerklasse und Belegungsart.
+  Der Preis ist fix und ändert sich nur durch aendern().
+end note
+
+@enduml

@@ -1,0 +1,43 @@
+@startuml Anmelden
+hide footbox
+actor Benutzer
+boundary LoginUI
+control SecurityService
+database "Datenbank" as DB
+entity "b: Benutzer" as BenutzerEntity
+
+activate Benutzer
+Benutzer -> LoginUI: loginDatenSenden(email, passwort)
+activate LoginUI
+
+LoginUI -> LoginUI: validiereEingabe(nicht leer)
+LoginUI -> SecurityService: authentifiziere(email, passwort)
+activate SecurityService
+
+SecurityService -> DB: ladeBenutzerNachEmail(email)
+activate DB
+DB --> SecurityService: b (Instanz von Gast oder Mitarbeiter)
+deactivate DB
+
+SecurityService -> BenutzerEntity: anmelden(email, passwort)
+activate BenutzerEntity
+BenutzerEntity -> BenutzerEntity: vergleichePasswortHash()
+BenutzerEntity --> SecurityService: true (falls korrekt)
+deactivate BenutzerEntity
+
+SecurityService -> BenutzerEntity: getRolle() / getType()
+activate BenutzerEntity
+BenutzerEntity --> SecurityService: rolle (z.B. HOTELLEITUNG)
+deactivate BenutzerEntity
+
+SecurityService -> SecurityService: erstelleSessionToken(b, rolle)
+SecurityService --> LoginUI: authErfolgreich (SessionContext)
+deactivate SecurityService
+
+alt rolle == GAST
+    LoginUI --> Benutzer: weiterleitungZuGästeportal()
+else rolle == MITARBEITER / HOTELLEITUNG
+    LoginUI --> Benutzer: weiterleitungZumMitarbeiterDashboard()
+end
+deactivate LoginUI
+@enduml

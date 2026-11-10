@@ -1,0 +1,112 @@
+@startuml BucheZimmerAlsMitarbeiter
+hide footbox
+actor Mitarbeiter
+boundary BuchungUI
+control BuchungService
+database "Datenbank" as DB
+entity "z: Zimmer" as Zimmer
+entity "b: Buchung" as Buchung
+
+== 1. Gast auswählen ==
+activate Mitarbeiter
+Mitarbeiter -> BuchungUI: öffneBuchungErfassen()
+activate BuchungUI
+BuchungUI --> Mitarbeiter: zeigeGastSuche()
+
+Mitarbeiter -> BuchungUI: sucheGast(name oder gastNr)
+BuchungUI -> BuchungService: findeGast(suchbegriff)
+activate BuchungService
+
+BuchungService -> DB: ladeGaeste(suchbegriff)
+activate DB
+DB --> BuchungService: liste(g)
+deactivate DB
+
+alt Gast gefunden
+    BuchungService --> BuchungUI: liste(g)
+    BuchungUI --> Mitarbeiter: zeigeProfildatenUndEingabemaske()
+    Mitarbeiter -> BuchungUI: wähleGast(gastNr)
+else Gast ist noch nicht im System (E1)
+    BuchungService --> BuchungUI: keinTreffer
+    BuchungUI --> Mitarbeiter: bieteGastprofilAnlegenAn()
+    note over Mitarbeiter, BuchungUI
+        Weiter mit UC11 LegeGastprofilAn.
+        Danach zurück zur Buchungsmaske mit dem neuen Gast.
+    end note
+end
+deactivate BuchungService
+
+== 2. Zimmer suchen ==
+Mitarbeiter -> BuchungUI: eingabeBestätigen(anreise, abreise, belegungsart, zimmerklasse)
+BuchungUI -> BuchungUI: validiereDatum(anreise < abreise)
+BuchungUI -> BuchungService: findeFreieZimmer(anreise, abreise, belegungsart, zimmerklasse)
+activate BuchungService
+
+BuchungService -> DB: ladeZimmer(belegungsart, zimmerklasse)
+activate DB
+DB --> BuchungService: liste(z)
+deactivate DB
+
+loop für jedes Zimmer z in liste(z)
+    BuchungService -> Zimmer: istVerfuegbar(anreise, abreise)
+    activate Zimmer
+    Zimmer --> BuchungService: true oder false
+    deactivate Zimmer
+end
+
+alt Freie Zimmer vorhanden
+    BuchungService --> BuchungUI: liste(freie Zimmer)
+    BuchungUI --> Mitarbeiter: zeigeFreieZimmer()
+else Kein passendes Zimmer frei (E2)
+    BuchungService --> BuchungUI: leereListe
+    BuchungUI --> Mitarbeiter: meldeKeinZimmerFrei()
+    note over Mitarbeiter, BuchungUI
+        Der Mitarbeiter ändert Zeitraum, Belegungsart oder Klasse
+        und sucht erneut (weiter mit Phase 2).
+        Bei Abbruch verwirft das System alle Eingaben.
+    end note
+end
+deactivate BuchungService
+
+== 3. Preis berechnen ==
+Mitarbeiter -> BuchungUI: wähleZimmer(zimmerNr)
+BuchungUI -> BuchungService: erstelleBuchungsvorschau(gastNr, zimmerNr, anreise, abreise)
+activate BuchungService
+
+BuchungService -> DB: ladePreise(zimmerklasse, belegungsart, anreise, abreise)
+activate DB
+DB --> BuchungService: liste(p)
+deactivate DB
+
+BuchungService -> Buchung: <<create>> (anreise, abreise, gast, zimmer)
+activate Buchung
+BuchungService -> Buchung: berechnePreis(liste(p))
+Buchung -> Buchung: gesamtpreis = Summe aus Nächten mal gültigem Nachtpreis
+Buchung --> BuchungService: gesamtpreis
+deactivate Buchung
+
+BuchungService --> BuchungUI: b (noch nicht gespeichert)
+deactivate BuchungService
+BuchungUI --> Mitarbeiter: zeigeZusammenfassung(zimmer, zeitraum, gesamtpreis)
+
+== 4. Buchung speichern ==
+Mitarbeiter -> BuchungUI: bestätigeBuchung()
+BuchungUI -> BuchungService: buchungSpeichern(b)
+activate BuchungService
+
+BuchungService -> Buchung: status = GEBUCHT
+activate Buchung
+deactivate Buchung
+
+BuchungService -> DB: speichere(b)
+activate DB
+DB --> BuchungService: buchungsNr
+deactivate DB
+
+BuchungService --> BuchungUI: buchungsNr
+deactivate BuchungService
+
+BuchungUI --> Mitarbeiter: zeigeMeldung(buchungsNr, zimmerNr, zeitraum, gesamtpreis)
+deactivate BuchungUI
+deactivate Mitarbeiter
+@enduml

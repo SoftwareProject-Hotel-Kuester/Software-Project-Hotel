@@ -1,0 +1,74 @@
+@startuml SteuereTaeglicheReinigung
+hide footbox
+participant "Zeitgeber\n(täglich 11 Uhr)" as Zeitgeber
+control ReinigungService
+database "Datenbank" as DB
+entity "l: Reinigungsliste" as Liste
+entity "z: Zimmer" as Zimmer
+actor Reinigungsteam
+actor Mitarbeiter
+
+== 1. Reinigungsliste erstellen (11:00 Uhr) ==
+Zeitgeber -> ReinigungService: starteTäglicheReinigung()
+activate ReinigungService
+
+ReinigungService -> DB: ladeZimmerNachStatus(ZU_REINIGEN)
+activate DB
+DB --> ReinigungService: liste(z)
+deactivate DB
+
+ReinigungService -> Liste: <<create>> (heutigesDatum)
+activate Liste
+
+loop für jedes Zimmer z in liste(z)
+    ReinigungService -> Liste: zimmerHinzufuegen(z)
+end
+
+== 2. Liste an das Reinigungsteam schicken ==
+ReinigungService -> Liste: versenden()
+Liste -> Reinigungsteam: reinigungslisteZustellen(l)
+
+note over Reinigungsteam
+    Das Reinigungsteam reinigt die Zimmer
+    auf der Liste bis 11:55 Uhr.
+    Dazu sendet das System keine Nachricht.
+end note
+
+... Reinigungszeit bis 12 Uhr ...
+
+== 3. Zimmerstatus aktualisieren ==
+' Reihenfolge ist wichtig: Erst die Zimmer der Liste auf GEREINIGT setzen,
+' danach die Zimmer mit NICHT_REINIGEN auf ZU_REINIGEN. Sonst würden sie
+' noch am selben Tag auf GEREINIGT springen.
+ReinigungService -> Liste: statusAktualisieren()
+
+loop für jedes Zimmer z der Liste
+    Liste -> Zimmer: reinigungsstatusAendern(GEREINIGT)
+    activate Zimmer
+    Zimmer --> Liste: ok
+    deactivate Zimmer
+end
+Liste --> ReinigungService: ok
+deactivate Liste
+
+ReinigungService -> DB: ladeZimmerNachStatus(NICHT_REINIGEN)
+activate DB
+DB --> ReinigungService: liste(z2)
+deactivate DB
+
+loop für jedes Zimmer z in liste(z2)
+    ReinigungService -> Zimmer: reinigungsstatusAendern(ZU_REINIGEN)
+    activate Zimmer
+    Zimmer --> ReinigungService: ok
+    deactivate Zimmer
+end
+
+ReinigungService -> DB: speichereZimmer(liste(z) und liste(z2))
+activate DB
+DB --> ReinigungService: ok
+deactivate DB
+
+== 4. Mitarbeiter informieren ==
+ReinigungService --> Mitarbeiter: meldeReinigungAbgeschlossen(anzahlGereinigt, anzahlNeuZuReinigen)
+deactivate ReinigungService
+@enduml

@@ -1,0 +1,66 @@
+@startuml
+hide footbox
+actor Hotelleitung
+boundary DashboardUI
+control ReportingService
+database "Datenbank" as DB
+entity "s: Statistik" as Statistik
+entity "b: Buchung" as Buchung
+entity "k: Kostenposten" as Kostenposten
+
+Hotelleitung -> DashboardUI: berichtAnfordern(von, bis, art)
+activate DashboardUI
+
+DashboardUI -> DashboardUI: validiereZeitraum(von < bis)
+DashboardUI -> ReportingService: generiereStatistik(von, bis, art)
+activate ReportingService
+
+ReportingService -> DB: ladeBuchungen(von, bis)
+activate DB
+DB --> ReportingService: liste(Buchungen)
+deactivate DB
+
+ReportingService -> DB: ladeKostenposten(von, bis)
+activate DB
+DB --> ReportingService: liste(Kostenposten)
+deactivate DB
+
+ReportingService -> Statistik: <<create>> (von, bis, art)
+activate Statistik
+Statistik --> ReportingService: s
+deactivate Statistik
+
+ReportingService -> Statistik: berechnen(listeBuchungen, listeKostenposten)
+activate Statistik
+
+loop für jede Buchung b in listeBuchungen
+    Statistik -> Buchung: anzahlNaechte()
+    activate Buchung
+    Buchung --> Statistik: naechte
+    deactivate Buchung
+    
+    Statistik -> Buchung: getGesamtpreis()
+    activate Buchung
+    Buchung --> Statistik: preis
+    deactivate Buchung
+end
+
+loop für jeden Kostenposten k in listeKostenposten
+    Statistik -> Kostenposten: getBetrag()
+    activate Kostenposten
+    Kostenposten --> Statistik: betrag
+    deactivate Kostenposten
+end
+
+Statistik -> Statistik: setzeAuslastung(kalkuliert)
+Statistik -> Statistik: setzeUmsatz(kalkuliert)
+Statistik -> Statistik: zeigeStatistik()
+Statistik --> ReportingService: aufbereiteteDaten
+deactivate Statistik
+
+ReportingService --> DashboardUI: reportDaten
+deactivate ReportingService
+
+DashboardUI --> Hotelleitung: zeigeGraphenUndTabellen()
+deactivate DashboardUI
+@enduml

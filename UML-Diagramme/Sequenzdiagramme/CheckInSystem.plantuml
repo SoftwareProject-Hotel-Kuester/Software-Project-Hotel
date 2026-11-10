@@ -1,0 +1,28 @@
+@startuml CheckInSystem
+hide footbox
+actor Mitarbeiter as M
+participant "System" as Sys
+
+M -> Sys: öffneCheckInAnsicht(heutigesDatum)
+activate Sys
+Sys --> M: zeigeAnreisendeGäste(buchungsListe)
+deactivate Sys
+
+M -> Sys: wähleBuchungFürCheckIn(buchungsNr)
+activate Sys
+
+Sys -> Sys: prüfeReinigungsstatusDesZimmers()
+alt Zimmer ist GEREINIGT
+    Sys --> M: checkInErlaubt(zimmerNr)
+    deactivate Sys
+
+    M -> Sys: checkInBestätigen()
+    activate Sys
+    Sys -> Sys: aktualisiereBuchungUndZimmerStatus()
+    Sys --> M: checkInErfolgreich()
+    deactivate Sys
+else Zimmer ist ZU_REINIGEN
+    Sys --> M: warnungZimmerNichtBereit(alternativeZimmerListe)
+    deactivate Sys
+end
+@enduml
