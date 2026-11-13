@@ -1,0 +1,121 @@
+@startuml relationenmodell
+' ============================================================
+'  Datenbank-Relationenmodell des Hotelbuchungssystems
+'  Stil angelehnt an Abbildung 21 aus dem Vorjahr:
+'   - Tabellenkopf grau, Tabellenname kursiv
+'   - linke Spalte: Schlüsselart (PK / FK1, FK2, ...)
+'   - rechte Spalte: Attribute in GROSSBUCHSTABEN, PK unterstrichen
+'   - Pfeil vom Fremdschlüssel zur referenzierten Tabelle, beschriftet mit FKn
+'
+'  Jede Tabelle ist eine "map" mit genau einem Eintrag:
+'    links  (vor =>): Schlüsselspalte, eine Zeile pro Attribut (\n = neue Zeile)
+'    rechts (nach =>): Attributnamen
+'  Dadurch läuft die senkrechte Trennlinie über die ganze Höhe.
+'  Wichtig: Links und rechts muss die Anzahl der Zeilen gleich sein.
+' ============================================================
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam nodesep 80
+skinparam ranksep 70
+skinparam ArrowColor #333333
+skinparam ArrowFontSize 11
+
+<style>
+map {
+  BackgroundColor white
+  LineColor black
+  FontSize 11
+  header {
+    BackgroundColor #D9D9D9
+    FontColor #333333
+  }
+}
+</style>
+
+' === Benutzer und Konten ===
+
+map "<i>Verifizierungstoken</i>" as Verifizierungstoken {
+  <i>PK</i>\n\n\n\n<i>FK4</i> => <u>TOKEN_ID</u>\nTOKEN\nTYP\nABLAUFDATUM\nBENUTZER_ID
+}
+
+map "<i>Benutzer</i>" as Benutzer {
+  <i>PK</i>\n\n\n\n\n\n\n<i>FK1</i> => <u>BENUTZER_ID</u>\nEMAIL\nPASSWORT\nVORNAME\nNACHNAME\nTELEFON\nAKTIV\nADRESS_ID
+}
+
+map "<i>Adresse</i>" as Adresse {
+  <i>PK</i>\n\n\n\n\n => <u>ADRESS_ID</u>\nSTRASSE\nHAUSNUMMER\nPLZ\nORT\nLAND
+}
+
+map "<i>Gast</i>" as Gast {
+  <i>PK</i>\n\n\n\n<i>FK3</i> => <u>GAST_ID</u>\nGEBURTSDATUM\nHAT_KONTO\nPRAEFERENZEN\nBENUTZER_ID
+}
+
+map "<i>Mitarbeiter</i>" as Mitarbeiter {
+  <i>PK</i>\n\n\n\n<i>FK2</i> => <u>PERSONAL_NR</u>\nROLLE\nEINTRITTSDATUM\nAUSTRITTSDATUM\nBENUTZER_ID
+}
+
+' === Buchung, Zimmer, Preise ===
+
+map "<i>Defektmeldung</i>" as Defektmeldung {
+  <i>PK</i>\n\n\n\n<i>FK7</i>\n<i>FK8</i> => <u>MELDUNGS_NR</u>\nBESCHREIBUNG\nGEMELDET_AM\nERLEDIGT\nGAST_ID\nZIMMER_NR
+}
+
+map "<i>Buchung</i>" as Buchung {
+  <i>PK</i>\n\n\n\n\n\n<i>FK5</i>\n<i>FK6</i> => <u>BUCHUNGS_NR</u>\nANREISE\nABREISE\nGESAMTPREIS\nSTATUS\nERSTELLT_AM\nGAST_ID\nZIMMER_NR
+}
+
+map "<i>Preis</i>" as Preis {
+  <i>PK</i>\n<i>PK</i>\n<i>PK</i>\n\n => <u>ZIMMERKLASSE</u>\n<u>BELEGUNGSART</u>\n<u>GUELTIG_AB</u>\nGUELTIG_BIS\nNACHTPREIS
+}
+
+map "<i>Zimmer</i>" as Zimmer {
+  <i>PK</i>\n\n\n\n\n\n => <u>ZIMMER_NR</u>\nETAGE\nBELEGUNGSART\nZIMMERKLASSE\nAUSSTATTUNG\nZIMMERSTATUS\nREINIGUNGSSTATUS
+}
+
+map "<i>Reinigungsliste</i>" as Reinigungsliste {
+  <i>PK</i>\n<i>PK, FK9</i> => <u>DATUM</u>\n<u>ZIMMER_NR</u>
+}
+
+' === Auswertungen und Kosten ===
+
+map "<i>Statistik</i>" as Statistik {
+  <i>PK</i>\n<i>PK</i>\n<i>PK</i>\n\n\n\n\n\n => <u>AUSWERTUNGSART</u>\n<u>ZEITRAUM_VON</u>\n<u>ZEITRAUM_BIS</u>\nZIMMERKLASSE\nZIMMERDICHTE\nAUSLASTUNG\nGAESTEZAHL\nUMSATZ\nKOSTEN
+}
+
+map "<i>Kostenposten</i>" as Kostenposten {
+  <i>PK</i>\n\n\n\n\n<i>FK10</i> => <u>KOSTEN_NR</u>\nZEITRAUM_VON\nZEITRAUM_BIS\nZIMMERDICHTE\nBETRAG\nZIMMERKLASSE
+}
+
+map "<i>Kostensatz</i>" as Kostensatz {
+  <i>PK</i>\n\n => <u>ZIMMERKLASSE</u>\nKOSTEN_PRO_NACHT_BELEGT\nKOSTEN_PRO_NACHT_UNBELEGT
+}
+
+' === Beziehungen ===
+
+Verifizierungstoken -right-> Benutzer : FK4
+Benutzer -right-> Adresse : FK1
+Gast -up-> Benutzer : FK3
+Mitarbeiter -up-> Benutzer : FK2
+
+Buchung -up-> Gast : FK5
+Buchung -down-> Zimmer : FK6
+Defektmeldung -up-> Gast : FK7
+Defektmeldung -down-> Zimmer : FK8
+Reinigungsliste -up-> Zimmer : FK9
+
+Kostenposten -down-> Kostensatz : FK10
+
+' Preis und Statistik haben keine Fremdschlüssel (Werte werden über
+' Zimmerklasse, Belegungsart und Zeitraum ermittelt).
+' Versteckte Linien dienen nur der Anordnung.
+Defektmeldung -[hidden]right- Buchung
+Buchung -[hidden]right- Preis
+Mitarbeiter -[hidden]down- Preis
+Adresse -[hidden]down- Statistik
+Statistik -[hidden]down- Kostenposten
+
+@enduml
