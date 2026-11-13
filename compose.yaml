@@ -1,0 +1,23 @@
+# Startet die Hilfsdienste für die Entwicklung. Spring Boot fährt sie beim
+# App-Start automatisch hoch, Docker Desktop muss dafür laufen.
+services:
+  # Datenbank für alle Daten (Zimmer, Gäste, Buchungen).
+  # Der Port ohne Doppelpunkt ist Absicht: Docker wählt einen freien Port,
+  # Spring Boot liest ihn selbst aus. So gibt es keine Konflikte mit einer
+  # lokal installierten Datenbank.
+  postgres:
+    image: 'postgres:17'
+    environment:
+      - 'POSTGRES_DB=hotel'
+      - 'POSTGRES_USER=hotel'
+      - 'POSTGRES_PASSWORD=hotel'
+    ports:
+      - '5432'
+  # Test-Mailserver: Hier landen alle E-Mails der App (z. B. Bestätigungslink
+  # bei der Registrierung), es wird nichts wirklich verschickt.
+  # Oberfläche im Browser: http://localhost:8025
+  mailpit:
+    image: 'axllent/mailpit'
+    ports:
+      - '1025:1025'
+      - '8025:8025'
