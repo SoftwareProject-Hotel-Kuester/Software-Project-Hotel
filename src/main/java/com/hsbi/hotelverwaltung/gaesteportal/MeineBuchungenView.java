@@ -21,7 +21,7 @@ import java.util.Optional;
  * Zimmer, Preis und Status, anstehende zuerst. Ein Klick auf eine Zeile
  * öffnet die Details.
  */
-@Route("meine-buchungen")
+@Route(value = "meine-buchungen", layout = GaesteportalLayout.class)
 @PageTitle("Meine Buchungen | Hotel Sparrenhof")
 @AnonymousAllowed // TODO: durch @RolesAllowed("GAST") ersetzen, sobald der Login fertig ist
 public class MeineBuchungenView extends VerticalLayout {
