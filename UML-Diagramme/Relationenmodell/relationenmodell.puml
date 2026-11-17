@@ -51,7 +51,7 @@ map "<i>Adresse</i>" as Adresse {
 }
 
 map "<i>Gast</i>" as Gast {
-  <i>PK</i>\n\n\n\n<i>FK3</i> => <u>GAST_ID</u>\nGEBURTSDATUM\nHAT_KONTO\nPRAEFERENZEN\nBENUTZER_ID
+  <i>PK, FK3</i>\n\n\n => <u>BENUTZER_ID</u>\nGEBURTSDATUM\nHAT_KONTO\nPRAEFERENZEN
 }
 
 map "<i>Mitarbeiter</i>" as Mitarbeiter {
@@ -73,7 +73,7 @@ map "<i>Preis</i>" as Preis {
 }
 
 map "<i>Zimmer</i>" as Zimmer {
-  <i>PK</i>\n\n\n\n\n\n => <u>ZIMMER_NR</u>\nETAGE\nBELEGUNGSART\nZIMMERKLASSE\nAUSSTATTUNG\nZIMMERSTATUS\nREINIGUNGSSTATUS
+  <i>PK</i>\n\n\n\n\n\n\n => <u>ZIMMER_NR</u>\nETAGE\nBELEGUNGSART\nZIMMERKLASSE\nAUSSTATTUNG\nZIMMERSTATUS\nREINIGUNGSSTATUS\nSPERRGRUND
 }
 
 map "<i>Reinigungsliste</i>" as Reinigungsliste {
