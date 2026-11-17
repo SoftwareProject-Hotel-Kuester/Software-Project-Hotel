@@ -25,7 +25,7 @@ public abstract class Benutzer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long benutzerId;
+    private Integer benutzerId;
 
     /** Zugleich der Anmeldename, deshalb eindeutig. */
     @Column(nullable = false, unique = true)
@@ -57,7 +57,7 @@ public abstract class Benutzer {
         return vorname + " " + nachname;
     }
 
-    public Long getBenutzerId() {
+    public Integer getBenutzerId() {
         return benutzerId;
     }
 
