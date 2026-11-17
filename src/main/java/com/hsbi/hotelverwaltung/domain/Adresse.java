@@ -13,7 +13,7 @@ public class Adresse {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long adressId;
+    private Integer adressId;
 
     private String strasse;
     private String hausnummer;
@@ -38,7 +38,7 @@ public class Adresse {
         return strasse + " " + hausnummer + ", " + plz + " " + ort;
     }
 
-    public Long getAdressId() {
+    public Integer getAdressId() {
         return adressId;
     }
 

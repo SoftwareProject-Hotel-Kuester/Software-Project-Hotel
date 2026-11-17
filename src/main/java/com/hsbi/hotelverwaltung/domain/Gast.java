@@ -33,7 +33,7 @@ public class Gast extends Benutzer {
     }
 
     /** Gastnummer, z. B. für die Suche durch Mitarbeiter (UC12, UC13). */
-    public Long getGastNr() {
+    public Integer getGastNr() {
         return getBenutzerId();
     }
 

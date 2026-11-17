@@ -1,11 +1,10 @@
 package com.hsbi.hotelverwaltung.domain;
 
-/** Reinigungs- bzw. Sperrstatus eines Zimmers (laut Domänen-Klassendiagramm). */
+/** Belegungs- bzw. Sperrstatus eines Zimmers (laut Domänen-Klassendiagramm). */
 public enum Zimmerstatus {
 
-    GEREINIGT("gereinigt"),
-    ZU_REINIGEN("zu reinigen"),
-    NICHT_REINIGEN("nicht reinigen"),
+    BELEGT("belegt"),
+    NICHT_BELEGT("nicht belegt"),
     GESPERRT("gesperrt");
 
     private final String bezeichnung;

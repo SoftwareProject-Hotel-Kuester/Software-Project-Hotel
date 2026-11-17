@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 /** Datenbankzugriff auf Gästeprofile. */
-public interface GastRepository extends JpaRepository<Gast, Long> {
+public interface GastRepository extends JpaRepository<Gast, Integer> {
 
     /** Sucht den Gast über seine E-Mail-Adresse (zugleich Anmeldename). */
     Optional<Gast> findByEmail(String email);

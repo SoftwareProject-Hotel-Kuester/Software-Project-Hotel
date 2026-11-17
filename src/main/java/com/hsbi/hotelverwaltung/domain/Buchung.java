@@ -12,7 +12,6 @@ import jakarta.persistence.ManyToOne;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -25,7 +24,7 @@ public class Buchung {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long buchungsNr;
+    private Integer buchungsNr;
 
     @Column(nullable = false)
     private LocalDate anreise;
@@ -41,7 +40,7 @@ public class Buchung {
     @Column(nullable = false)
     private Buchungsstatus status;
 
-    private LocalDateTime erstelltAm;
+    private LocalDate erstelltAm;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "gast_id", nullable = false)
@@ -65,7 +64,7 @@ public class Buchung {
         this.abreise = abreise;
         this.gesamtpreis = gesamtpreis;
         this.status = Buchungsstatus.GEBUCHT;
-        this.erstelltAm = LocalDateTime.now();
+        this.erstelltAm = LocalDate.now();
     }
 
     /** Anzahl der Übernachtungen, z. B. 15.06. bis 18.06. = 3 Nächte. */
@@ -86,7 +85,7 @@ public class Buchung {
         return status == Buchungsstatus.GEBUCHT && anreise.isAfter(heute);
     }
 
-    public Long getBuchungsNr() {
+    public Integer getBuchungsNr() {
         return buchungsNr;
     }
 
@@ -122,7 +121,7 @@ public class Buchung {
         this.status = status;
     }
 
-    public LocalDateTime getErstelltAm() {
+    public LocalDate getErstelltAm() {
         return erstelltAm;
     }
 
