@@ -48,9 +48,9 @@ public class GaesteportalTestdaten implements CommandLineRunner {
             return; // schon angelegt
         }
 
-        Zimmer z101 = zimmer("101", 1, Belegungsart.EINZEL, Zimmerklasse.ECONOMY);
-        Zimmer z201 = zimmer("201", 2, Belegungsart.FAMILIE, Zimmerklasse.PREMIUM);
-        Zimmer z304 = zimmer("304", 3, Belegungsart.DOPPEL, Zimmerklasse.STANDARD);
+        Zimmer z101 = zimmer(101, 1, Belegungsart.EINZEL, Zimmerklasse.ECONOMY);
+        Zimmer z201 = zimmer(201, 2, Belegungsart.FAMILIE, Zimmerklasse.PREMIUM);
+        Zimmer z304 = zimmer(304, 3, Belegungsart.DOPPEL, Zimmerklasse.STANDARD);
 
         Gast max = gast(TESTGAST_EMAIL, "Max", "Mustermann", LocalDate.of(1990, 5, 12),
                 new Adresse("Hauptstraße", "1", "33602", "Bielefeld", "Deutschland"));
@@ -76,7 +76,7 @@ public class GaesteportalTestdaten implements CommandLineRunner {
     }
 
     /** Legt das Zimmer nur an, wenn eine andere Gruppe es nicht schon angelegt hat. */
-    private Zimmer zimmer(String nr, int etage, Belegungsart art, Zimmerklasse klasse) {
+    private Zimmer zimmer(int nr, int etage, Belegungsart art, Zimmerklasse klasse) {
         return zimmerRepository.findById(nr)
                 .orElseGet(() -> zimmerRepository.save(new Zimmer(nr, etage, art, klasse)));
     }

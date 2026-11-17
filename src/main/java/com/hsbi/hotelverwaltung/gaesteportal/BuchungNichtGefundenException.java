@@ -8,7 +8,7 @@ package com.hsbi.hotelverwaltung.gaesteportal;
  */
 public class BuchungNichtGefundenException extends RuntimeException {
 
-    public BuchungNichtGefundenException(Long buchungsNr) {
+    public BuchungNichtGefundenException(Integer buchungsNr) {
         super("Buchung " + buchungsNr + " wurde nicht gefunden.");
     }
 }

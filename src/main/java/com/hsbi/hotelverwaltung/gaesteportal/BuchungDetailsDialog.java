@@ -28,7 +28,7 @@ class BuchungDetailsDialog extends Dialog {
                 zeile("Nächte", String.valueOf(buchung.anzahlNaechte())),
                 zeile("Gesamtpreis", Anzeige.preis(buchung.getGesamtpreis())),
                 zeile("Status", buchung.getStatus().getBezeichnung()),
-                zeile("Gebucht am", Anzeige.datumUhrzeit(buchung.getErstelltAm())));
+                zeile("Gebucht am", Anzeige.datum(buchung.getErstelltAm())));
         inhalt.setPadding(false);
         inhalt.setSpacing(false);
         add(inhalt);

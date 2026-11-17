@@ -70,7 +70,7 @@ public class GaesteportalService {
      * @throws BuchungNichtGefundenException wenn es die Buchung nicht gibt
      *         oder sie einem anderen Gast gehört
      */
-    public Buchung eigeneBuchung(Gast gast, Long buchungsNr) {
+    public Buchung eigeneBuchung(Gast gast, Integer buchungsNr) {
         Buchung buchung = buchungRepository.findById(buchungsNr)
                 .orElseThrow(() -> new BuchungNichtGefundenException(buchungsNr));
         if (!buchung.getGast().istDerselbeWie(gast)) {
