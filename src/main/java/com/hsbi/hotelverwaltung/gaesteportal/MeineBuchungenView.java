@@ -13,74 +13,87 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * UC18 ZeigeEigeneBuchungen: Der Gast sieht seine Buchungen mit Zeitraum,
- * Zimmer, Preis und Status, anstehende zuerst. Ein Klick auf eine Zeile
- * öffnet die Details.
- */
+// Seite "Meine Buchungen" (UC18 ZeigeEigeneBuchungen).
+// Der Gast sieht seine Buchungen mit Zeitraum, Zimmer, Preis und Status.
+// Ein Klick auf eine Zeile öffnet die Details.
+//
+// @Route: Die Seite ist unter http://localhost:8080/meine-buchungen erreichbar.
+//   layout = GaesteportalLayout.class: Die Seite erscheint mit der Menüleiste des Gästeportals.
+// @PageTitle: Text im Browser-Tab.
+// @AnonymousAllowed: Jeder darf die Seite öffnen. Nur vorübergehend, bis es den Login gibt.
+//   Danach wird daraus @RolesAllowed("GAST").
+// extends VerticalLayout: Die Seite ordnet ihre Bestandteile untereinander an.
 @Route(value = "meine-buchungen", layout = GaesteportalLayout.class)
 @PageTitle("Meine Buchungen | Hotel Sparrenhof")
-@AnonymousAllowed // TODO: durch @RolesAllowed("GAST") ersetzen, sobald der Login fertig ist
+@AnonymousAllowed
 public class MeineBuchungenView extends VerticalLayout {
-
-    /** Route der Zimmersuche (UC16, Gruppe 2). TODO: mit Gruppe 2 abstimmen. */
-    static final String ROUTE_ZIMMERSUCHE = "zimmersuche";
 
     private final GaesteportalService gaesteportalService;
 
+    // Konstruktor: Wird jedes Mal aufgerufen, wenn jemand die Seite öffnet.
+    // Spring übergibt AktuellerGast und GaesteportalService automatisch.
     public MeineBuchungenView(AktuellerGast aktuellerGast, GaesteportalService gaesteportalService) {
         this.gaesteportalService = gaesteportalService;
 
         add(new H2("Meine Buchungen"));
 
+        // Schritt 1: Wer ist angemeldet?
         Optional<Gast> gast = aktuellerGast.get();
         if (gast.isEmpty()) {
             add(new Paragraph("Bitte melde dich an, um deine Buchungen zu sehen."));
             return;
         }
 
-        List<Buchung> buchungen = gaesteportalService.eigeneBuchungen(gast.get());
+        // Schritt 2: Buchungen über den Service laden.
+        List<Buchung> buchungen = gaesteportalService.eigeneBuchungen(gast.get(), LocalDate.now());
+
+        // Schritt 3: Je nach Ergebnis Hinweis oder Tabelle anzeigen.
         if (buchungen.isEmpty()) {
             zeigeHinweisKeineBuchung();
         } else {
-            zeigeBuchungen(gast.get(), buchungen);
+            zeigeTabelle(gast.get(), buchungen);
         }
     }
 
-    /** UC18 E1: Noch keine Buchung, Verweis auf die Zimmersuche. */
+    // UC18 E1: Der Gast hat noch nichts gebucht. Er bekommt einen Button zur Zimmersuche.
     private void zeigeHinweisKeineBuchung() {
         Button zurSuche = new Button("Zimmer suchen",
-                e -> UI.getCurrent().navigate(ROUTE_ZIMMERSUCHE));
+                klick -> UI.getCurrent().navigate(GaesteportalLayout.ROUTE_ZIMMERSUCHE));
         add(new Paragraph("Du hast noch keine Buchung."), zurSuche);
     }
 
-    private void zeigeBuchungen(Gast gast, List<Buchung> buchungen) {
-        Grid<Buchung> grid = new Grid<>(Buchung.class, false);
-        grid.addColumn(Buchung::getBuchungsNr).setHeader("Nr.").setAutoWidth(true);
-        grid.addColumn(b -> b.getZimmer().getKurzbeschreibung()).setHeader("Zimmer").setAutoWidth(true);
-        grid.addColumn(b -> Anzeige.datum(b.getAnreise())).setHeader("Anreise").setAutoWidth(true);
-        grid.addColumn(b -> Anzeige.datum(b.getAbreise())).setHeader("Abreise").setAutoWidth(true);
-        grid.addColumn(Buchung::anzahlNaechte).setHeader("Nächte").setAutoWidth(true);
-        grid.addColumn(b -> Anzeige.preis(b.getGesamtpreis())).setHeader("Gesamtpreis").setAutoWidth(true);
-        grid.addColumn(b -> b.getStatus().getBezeichnung()).setHeader("Status").setAutoWidth(true);
+    // UC18 Schritt 2 und 3: Tabelle mit allen Buchungen des Gastes.
+    private void zeigeTabelle(Gast gast, List<Buchung> buchungen) {
+        // Grid = Tabelle. false: Spalten werden nicht automatisch erzeugt, wir legen sie selbst fest.
+        Grid<Buchung> tabelle = new Grid<>(Buchung.class, false);
 
-        grid.setItems(buchungen);
-        grid.setAllRowsVisible(true);
+        // Jede Spalte bekommt eine Buchung und gibt den Text für die Zelle zurück.
+        tabelle.addColumn(buchung -> buchung.getBuchungsNr()).setHeader("Nr.");
+        tabelle.addColumn(buchung -> buchung.getZimmer().getKurzbeschreibung()).setHeader("Zimmer");
+        tabelle.addColumn(buchung -> Anzeige.datum(buchung.getAnreise())).setHeader("Anreise");
+        tabelle.addColumn(buchung -> Anzeige.datum(buchung.getAbreise())).setHeader("Abreise");
+        tabelle.addColumn(buchung -> buchung.anzahlNaechte()).setHeader("Nächte");
+        tabelle.addColumn(buchung -> Anzeige.preis(buchung.getGesamtpreis())).setHeader("Gesamtpreis");
+        tabelle.addColumn(buchung -> buchung.getStatus().getBezeichnung()).setHeader("Status");
 
-        // UC18 Schritt 3 und 4: Buchung auswählen, Details anzeigen.
-        // Die Buchung wird über den Service neu geladen, der prüft, ob sie dem Gast gehört.
-        grid.addItemClickListener(klick -> {
+        tabelle.setItems(buchungen);
+        tabelle.setAllRowsVisible(true);
+
+        // UC18 Schritt 4: Klick auf eine Zeile öffnet die Details.
+        // Die Buchung wird dafür über den Service neu geladen. Der prüft, ob sie dem Gast gehört.
+        tabelle.addItemClickListener(klick -> {
             try {
                 Buchung buchung = gaesteportalService.eigeneBuchung(gast, klick.getItem().getBuchungsNr());
-                new BuchungDetailsDialog(buchung, gaesteportalService.heute()).open();
-            } catch (BuchungNichtGefundenException ex) {
-                Notification.show(ex.getMessage());
+                new BuchungDetailsDialog(buchung).open();
+            } catch (BuchungNichtGefundenException fehler) {
+                Notification.show(fehler.getMessage());
             }
         });
 
-        add(new Paragraph("Klicke auf eine Buchung, um die Details zu sehen."), grid);
+        add(new Paragraph("Klicke auf eine Buchung, um die Details zu sehen."), tabelle);
     }
 }

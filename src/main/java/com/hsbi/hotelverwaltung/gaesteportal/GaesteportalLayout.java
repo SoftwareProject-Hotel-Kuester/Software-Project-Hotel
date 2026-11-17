@@ -2,41 +2,39 @@ package com.hsbi.hotelverwaltung.gaesteportal;
 
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
-/**
- * Gemeinsamer Rahmen aller Seiten des Gästeportals (wie im Mockup):
- * links der Hotelname, rechts das Menü "Zimmersuche · Meine Buchungen · Profil".
- *
- * Eine Seite erscheint in diesem Rahmen, wenn sie
- * {@code @Route(value = "...", layout = GaesteportalLayout.class)} angibt.
- *
- * Der Mitarbeiterbereich bekommt ein eigenes Layout (nicht Teil des Gästeportals).
- */
-@AnonymousAllowed // Das Menü selbst ist für alle sichtbar, die Seiten prüfen ihre Rechte selbst.
+// Gemeinsamer Rahmen für alle Seiten des Gästeportals (wie im Mockup):
+// links der Hotelname, rechts das Menü "Zimmersuche · Meine Buchungen · Profil".
+//
+// Eine Seite erscheint in diesem Rahmen, wenn sie
+// @Route(value = "...", layout = GaesteportalLayout.class) angibt.
+//
+// extends AppLayout: Vaadin-Grundgerüst mit Kopfzeile (Navbar) und Inhaltsbereich.
+// @AnonymousAllowed: Das Menü darf jeder sehen. Die Seiten selbst prüfen ihre Rechte.
+@AnonymousAllowed
 public class GaesteportalLayout extends AppLayout {
 
-    /** Route der Profilseite (UC21). TODO: anpassen, sobald die Seite existiert. */
-    static final String ROUTE_PROFIL = "profil";
+    // Adressen der Seiten. TODO: an die echten Seiten anpassen, sobald es sie gibt.
+    static final String ROUTE_ZIMMERSUCHE = "zimmersuche";   // UC16, Gruppe 2
+    static final String ROUTE_PROFIL = "profil";             // UC21, Gästeportal
 
     public GaesteportalLayout() {
-        Span hotelname = new Span("Hotel Sparrenhof");
-        hotelname.getStyle().set("font-size", "1.25rem").set("font-weight", "600");
+        H3 hotelname = new H3("Hotel Sparrenhof");
 
-        // Zimmersuche und Profil gibt es noch nicht, deshalb einfache Links über die Adresse.
-        // Sobald die Views existieren: new RouterLink("Zimmersuche", ZimmersucheView.class) usw.
-        Anchor zimmersuche = new Anchor(MeineBuchungenView.ROUTE_ZIMMERSUCHE, "Zimmersuche");
+        // Zimmersuche und Profil gibt es noch nicht, deshalb normale Links über die Adresse.
+        Anchor zimmersuche = new Anchor(ROUTE_ZIMMERSUCHE, "Zimmersuche");
         RouterLink meineBuchungen = new RouterLink("Meine Buchungen", MeineBuchungenView.class);
         Anchor profil = new Anchor(ROUTE_PROFIL, "Profil");
         // TODO Gruppe 6: Anmelden/Abmelden hier ergänzen
 
         HorizontalLayout menue = new HorizontalLayout(zimmersuche, meineBuchungen, profil);
-        menue.getStyle().set("gap", "1.5rem");
 
+        // Kopfzeile: Hotelname links, Menü rechts.
         HorizontalLayout kopfzeile = new HorizontalLayout(hotelname, menue);
         kopfzeile.setWidthFull();
         kopfzeile.setAlignItems(FlexComponent.Alignment.CENTER);

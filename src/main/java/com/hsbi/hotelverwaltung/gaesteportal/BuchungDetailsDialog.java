@@ -4,51 +4,39 @@ import com.hsbi.hotelverwaltung.domain.Buchung;
 import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.html.Paragraph;
 
-import java.time.LocalDate;
-
-/**
- * UC18 Schritt 4: Details einer Buchung. Die Knöpfe für Ändern (UC19) und
- * Stornieren (UC20) sind schon da, aber nur aktiv, wenn die Buchung noch
- * geändert werden darf.
- */
+// Fenster mit den Details einer Buchung (UC18 Schritt 4).
+// extends Dialog: ein Fenster, das sich über die Seite legt.
+//
+// Die Buttons "Ändern" (UC19) und "Stornieren" (UC20) sind schon da,
+// funktionieren aber erst, wenn diese Use Cases umgesetzt sind.
 class BuchungDetailsDialog extends Dialog {
 
-    BuchungDetailsDialog(Buchung buchung, LocalDate heute) {
+    // Bekommt: die Buchung, deren Details angezeigt werden sollen.
+    BuchungDetailsDialog(Buchung buchung) {
         setHeaderTitle("Buchung Nr. " + buchung.getBuchungsNr());
 
         Zimmer zimmer = buchung.getZimmer();
-        VerticalLayout inhalt = new VerticalLayout(
-                zeile("Zimmer", zimmer.getZimmerNr() + ", " + zimmer.getEtage() + ". Etage"),
-                zeile("Klasse", zimmer.getZimmerklasse().getBezeichnung()),
-                zeile("Belegungsart", zimmer.getBelegungsart().getBezeichnung()),
-                zeile("Zeitraum", Anzeige.datum(buchung.getAnreise()) + " bis " + Anzeige.datum(buchung.getAbreise())),
-                zeile("Nächte", String.valueOf(buchung.anzahlNaechte())),
-                zeile("Gesamtpreis", Anzeige.preis(buchung.getGesamtpreis())),
-                zeile("Status", buchung.getStatus().getBezeichnung()),
-                zeile("Gebucht am", Anzeige.datum(buchung.getErstelltAm())));
-        inhalt.setPadding(false);
-        inhalt.setSpacing(false);
-        add(inhalt);
+        add(new Paragraph("Zimmer: " + zimmer.getZimmerNr() + ", " + zimmer.getEtage() + ". Etage"));
+        add(new Paragraph("Klasse: " + zimmer.getZimmerklasse().getBezeichnung()));
+        add(new Paragraph("Belegungsart: " + zimmer.getBelegungsart().getBezeichnung()));
+        add(new Paragraph("Zeitraum: " + Anzeige.datum(buchung.getAnreise())
+                + " bis " + Anzeige.datum(buchung.getAbreise())));
+        add(new Paragraph("Nächte: " + buchung.anzahlNaechte()));
+        add(new Paragraph("Gesamtpreis: " + Anzeige.preis(buchung.getGesamtpreis())));
+        add(new Paragraph("Status: " + buchung.getStatus().getBezeichnung()));
+        add(new Paragraph("Gebucht am: " + Anzeige.datum(buchung.getErstelltAm())));
 
-        boolean aenderbar = buchung.kannVomGastGeaendertWerden(heute);
-
-        Button aendern = new Button("Ändern");      // TODO UC19 ÄndereEigeneBuchung
+        // TODO UC19 und UC20: Klick-Aktionen ergänzen. Aktivieren nur, wenn
+        // buchung.kannVomGastGeaendertWerden(LocalDate.now()) true liefert
+        // (anstehende Buchung mit Status "gebucht"). Die Regel steht in der Klasse Buchung.
+        Button aendern = new Button("Ändern");
+        Button stornieren = new Button("Stornieren");
         aendern.setEnabled(false);
-        Button stornieren = new Button("Stornieren"); // TODO UC20 StorniereEigeneBuchung
         stornieren.setEnabled(false);
-        if (!aenderbar) {
-            aendern.setTooltipText("Nur anstehende Buchungen mit Status \"gebucht\" können geändert werden.");
-            stornieren.setTooltipText("Nur anstehende Buchungen mit Status \"gebucht\" können storniert werden.");
-        }
 
-        Button schliessen = new Button("Schließen", e -> close());
+        Button schliessen = new Button("Schließen", klick -> close());
         getFooter().add(aendern, stornieren, schliessen);
-    }
-
-    private static Span zeile(String bezeichnung, String wert) {
-        return new Span(bezeichnung + ": " + wert);
     }
 }

@@ -1,7 +1,6 @@
 package com.hsbi.hotelverwaltung.gaesteportal;
 
 import com.hsbi.hotelverwaltung.domain.Adresse;
-import com.hsbi.hotelverwaltung.domain.Belegungsart;
 import com.hsbi.hotelverwaltung.domain.Buchung;
 import com.hsbi.hotelverwaltung.domain.BuchungRepository;
 import com.hsbi.hotelverwaltung.domain.Buchungsstatus;
@@ -9,65 +8,79 @@ import com.hsbi.hotelverwaltung.domain.Gast;
 import com.hsbi.hotelverwaltung.domain.GastRepository;
 import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.ZimmerRepository;
-import com.hsbi.hotelverwaltung.domain.Zimmerklasse;
+import com.hsbi.hotelverwaltung.zimmer.ZimmerTestdaten;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Legt beim Start Testdaten für das Gästeportal an, falls sie noch fehlen.
- * Die Daten passen zu den Mockups (Max Mustermann, Zimmer 101, 201, 304).
- *
- * Erika Musterfrau ist ein zweiter Gast. Mit ihr lässt sich zeigen, dass
- * Max ihre Buchung nicht sehen kann.
- *
- * TODO: Mit dem Team abstimmen, ob es später eine gemeinsame Testdaten-Klasse gibt.
- */
+// Diese Klasse legt beim Start der App Testdaten für das Gästeportal an:
+// zwei Gäste und ihre Buchungen. Gehört zu UC18 ZeigeEigeneBuchungen.
+//
+// - Max Mustermann (wie im Mockup) hat eine vergangene, eine anstehende und eine stornierte Buchung.
+// - Erika Musterfrau hat eine eigene Buchung. Damit lässt sich zeigen,
+//   dass Max ihre Buchung nicht sehen kann.
+//
+// Die Zimmer legen wir nicht selbst an, sondern nutzen die aus ZimmerTestdaten (101 bis 303).
+//
+// @Component + CommandLineRunner: Spring ruft run(...) einmal auf, sobald die App gestartet ist.
 @Component
 public class GaesteportalTestdaten implements CommandLineRunner {
 
+    // E-Mail des Test-Gastes. AktuellerGast nutzt sie, solange es keinen Login gibt.
     static final String TESTGAST_EMAIL = "max.mustermann@example.com";
-    static final String ZWEITER_GAST_EMAIL = "erika.musterfrau@example.com";
 
     private final GastRepository gastRepository;
     private final ZimmerRepository zimmerRepository;
     private final BuchungRepository buchungRepository;
+    private final ZimmerTestdaten zimmerTestdaten;
 
+    // Konstruktor: Spring übergibt alle Repositories und ZimmerTestdaten automatisch.
     public GaesteportalTestdaten(GastRepository gastRepository, ZimmerRepository zimmerRepository,
-                                 BuchungRepository buchungRepository) {
+                                 BuchungRepository buchungRepository, ZimmerTestdaten zimmerTestdaten) {
         this.gastRepository = gastRepository;
         this.zimmerRepository = zimmerRepository;
         this.buchungRepository = buchungRepository;
+        this.zimmerTestdaten = zimmerTestdaten;
     }
 
+    // Wird einmal nach dem Start der App aufgerufen.
     @Override
     public void run(String... args) {
+        // Schritt 1: Gibt es Max schon, sind die Testdaten schon da. Dann nichts tun.
         if (gastRepository.findByEmail(TESTGAST_EMAIL).isPresent()) {
-            return; // schon angelegt
+            return;
         }
 
-        Zimmer z101 = zimmer(101, 1, Belegungsart.EINZEL, Zimmerklasse.ECONOMY);
-        Zimmer z201 = zimmer(201, 2, Belegungsart.FAMILIE, Zimmerklasse.PREMIUM);
-        Zimmer z304 = zimmer(304, 3, Belegungsart.DOPPEL, Zimmerklasse.STANDARD);
+        // Schritt 2: Sicherstellen, dass die Zimmer da sind.
+        // In welcher Reihenfolge Spring die Testdaten-Klassen startet, ist nicht festgelegt.
+        // ZimmerTestdaten legt nur Zimmer an, wenn es noch keine gibt. Ein doppelter Aufruf schadet also nicht.
+        zimmerTestdaten.run();
 
-        Gast max = gast(TESTGAST_EMAIL, "Max", "Mustermann", LocalDate.of(1990, 5, 12),
+        Zimmer zimmer101 = zimmerRepository.findById(101).orElseThrow();   // Einzel, Economy
+        Zimmer zimmer202 = zimmerRepository.findById(202).orElseThrow();   // Doppel, Standard
+        Zimmer zimmer303 = zimmerRepository.findById(303).orElseThrow();   // Familie, Premium
+
+        // Schritt 3: Die beiden Gäste anlegen.
+        Gast max = gastAnlegen(TESTGAST_EMAIL, "Max", "Mustermann", LocalDate.of(1990, 5, 12),
                 new Adresse("Hauptstraße", "1", "33602", "Bielefeld", "Deutschland"));
-        Gast erika = gast(ZWEITER_GAST_EMAIL, "Erika", "Musterfrau", LocalDate.of(1985, 8, 3),
+        Gast erika = gastAnlegen("erika.musterfrau@example.com", "Erika", "Musterfrau", LocalDate.of(1985, 8, 3),
                 new Adresse("Bahnhofstraße", "5", "33602", "Bielefeld", "Deutschland"));
 
+        // Schritt 4: Buchungen anlegen. Die Daten hängen vom heutigen Tag ab,
+        // damit es immer vergangene und anstehende Buchungen gibt.
         LocalDate heute = LocalDate.now();
 
-        // Max: eine vergangene, zwei anstehende (eine davon storniert)
-        Buchung vergangen = new Buchung(max, z101, heute.minusDays(40), heute.minusDays(37), new BigDecimal("240.00"));
+        Buchung vergangen = new Buchung(max, zimmer101, heute.minusDays(40), heute.minusDays(37), new BigDecimal("240.00"));
         vergangen.setStatus(Buchungsstatus.AUSGECHECKT);
-        Buchung anstehend = new Buchung(max, z304, heute.plusDays(14), heute.plusDays(17), new BigDecimal("360.00"));
-        Buchung storniert = new Buchung(max, z201, heute.plusDays(30), heute.plusDays(32), new BigDecimal("500.00"));
+
+        Buchung anstehend = new Buchung(max, zimmer202, heute.plusDays(14), heute.plusDays(17), new BigDecimal("360.00"));
+
+        Buchung storniert = new Buchung(max, zimmer303, heute.plusDays(30), heute.plusDays(32), new BigDecimal("500.00"));
         storniert.setStatus(Buchungsstatus.STORNIERT);
 
-        // Erika: darf bei Max nicht auftauchen
-        Buchung vonErika = new Buchung(erika, z201, heute.plusDays(3), heute.plusDays(5), new BigDecimal("500.00"));
+        Buchung vonErika = new Buchung(erika, zimmer303, heute.plusDays(3), heute.plusDays(5), new BigDecimal("500.00"));
 
         buchungRepository.save(vergangen);
         buchungRepository.save(anstehend);
@@ -75,13 +88,10 @@ public class GaesteportalTestdaten implements CommandLineRunner {
         buchungRepository.save(vonErika);
     }
 
-    /** Legt das Zimmer nur an, wenn eine andere Gruppe es nicht schon angelegt hat. */
-    private Zimmer zimmer(int nr, int etage, Belegungsart art, Zimmerklasse klasse) {
-        return zimmerRepository.findById(nr)
-                .orElseGet(() -> zimmerRepository.save(new Zimmer(nr, etage, art, klasse)));
-    }
-
-    private Gast gast(String email, String vorname, String nachname, LocalDate geburtsdatum, Adresse adresse) {
+    // Legt einen Gast mit Konto an und speichert ihn.
+    // Bekommt: E-Mail, Vorname, Nachname, Geburtsdatum und Adresse.
+    // Gibt zurück: den gespeicherten Gast.
+    private Gast gastAnlegen(String email, String vorname, String nachname, LocalDate geburtsdatum, Adresse adresse) {
         Gast gast = new Gast(email, vorname, nachname, geburtsdatum);
         gast.setAktiv(true);
         gast.setTelefon("0521 123456");

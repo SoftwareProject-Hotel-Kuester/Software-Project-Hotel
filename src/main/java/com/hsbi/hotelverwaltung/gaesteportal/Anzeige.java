@@ -6,20 +6,27 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/** Einheitliche Formatierung von Datum und Preis für die Oberfläche. */
-final class Anzeige {
+// Hilfsklasse, damit Datum und Preis auf allen Seiten des Gästeportals
+// gleich aussehen, z. B. "15.06.2027" und "360,00 €".
+// Die Methoden sind static: Man ruft sie direkt auf, z. B. Anzeige.datum(...),
+// ohne vorher ein Objekt zu erzeugen.
+class Anzeige {
 
-    private static final DateTimeFormatter DATUM = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter DATUMSFORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-    private Anzeige() {
-    }
-
+    // Bekommt: ein Datum. Gibt zurück: das Datum als Text, z. B. "15.06.2027".
     static String datum(LocalDate datum) {
-        return datum == null ? "" : DATUM.format(datum);
+        if (datum == null) {
+            return "";
+        }
+        return DATUMSFORMAT.format(datum);
     }
 
-    /** z. B. "360,00 €" */
+    // Bekommt: einen Betrag. Gibt zurück: den Betrag in Euro, z. B. "360,00 €".
     static String preis(BigDecimal betrag) {
-        return betrag == null ? "" : NumberFormat.getCurrencyInstance(Locale.GERMANY).format(betrag);
+        if (betrag == null) {
+            return "";
+        }
+        return NumberFormat.getCurrencyInstance(Locale.GERMANY).format(betrag);
     }
 }
