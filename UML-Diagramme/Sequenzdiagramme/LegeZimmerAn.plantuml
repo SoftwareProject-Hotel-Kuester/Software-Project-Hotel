@@ -1,0 +1,47 @@
+@startuml LegeZimmerAn
+hide footbox
+actor Hotelleitung
+boundary ZimmerAnlegenView
+control ZimmerService
+entity "z: Zimmer" as Zimmer
+database "Datenbank" as DB
+
+== 1. Zimmerdaten eingeben ==
+Hotelleitung -> ZimmerAnlegenView: öffneZimmerAnlegen()
+activate ZimmerAnlegenView
+Hotelleitung -> ZimmerAnlegenView: speichern(zimmerNr, etage, belegungsart, zimmerklasse)
+
+ZimmerAnlegenView -> ZimmerService: zimmerAnlegen(zimmerNr, etage, belegungsart, zimmerklasse)
+activate ZimmerService
+
+== 2. Zimmernummer prüfen ==
+ZimmerService -> ZimmerService: zimmerNummerIstVergeben(zimmerNr)
+ZimmerService -> DB: existsById(zimmerNr)
+activate DB
+DB --> ZimmerService: vergeben
+deactivate DB
+
+alt Zimmernummer ist bereits vergeben (E1)
+    ZimmerService --> ZimmerAnlegenView: Fehler
+    Hotelleitung <-- ZimmerAnlegenView: zeigeFehlermeldung(), Eingaben bleiben stehen
+else Zimmernummer ist frei
+    == 3. Zimmer anlegen und speichern ==
+    ZimmerService -> Zimmer: <<create>> (zimmerNr, etage, belegungsart, zimmerklasse)
+    activate Zimmer
+    Zimmer -> Zimmer: zimmerstatus = NICHT_BELEGT
+    Zimmer -> Zimmer: reinigungsstatus = ZU_REINIGEN
+    Zimmer --> ZimmerService: z
+    deactivate Zimmer
+
+    ZimmerService -> DB: save(z)
+    activate DB
+    DB --> ZimmerService: ok
+    deactivate DB
+
+    ZimmerService --> ZimmerAnlegenView: z
+    Hotelleitung <-- ZimmerAnlegenView: zeigeErfolgsmeldung()
+end
+
+deactivate ZimmerService
+deactivate ZimmerAnlegenView
+@enduml
