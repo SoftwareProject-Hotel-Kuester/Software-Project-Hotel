@@ -34,6 +34,7 @@ public class GaesteportalLayout extends AppLayout {
 
         HorizontalLayout menue = new HorizontalLayout(zimmersuche, meineBuchungen, profil);
 
+        // sowas hätte claude gemacht
         // Kopfzeile: Hotelname links, Menü rechts.
         HorizontalLayout kopfzeile = new HorizontalLayout(hotelname, menue);
         kopfzeile.setWidthFull();
