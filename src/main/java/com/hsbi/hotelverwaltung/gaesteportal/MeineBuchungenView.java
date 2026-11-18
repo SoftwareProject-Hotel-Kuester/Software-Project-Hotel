@@ -74,10 +74,10 @@ public class MeineBuchungenView extends VerticalLayout {
         // Jede Spalte bekommt eine Buchung und gibt den Text für die Zelle zurück.
         tabelle.addColumn(buchung -> buchung.getBuchungsNr()).setHeader("Nr.");
         tabelle.addColumn(buchung -> buchung.getZimmer().getKurzbeschreibung()).setHeader("Zimmer");
-        tabelle.addColumn(buchung -> Anzeige.datum(buchung.getAnreise())).setHeader("Anreise");
-        tabelle.addColumn(buchung -> Anzeige.datum(buchung.getAbreise())).setHeader("Abreise");
+        tabelle.addColumn(buchung -> DatumUndPreisFormat.datum(buchung.getAnreise())).setHeader("Anreise");
+        tabelle.addColumn(buchung -> DatumUndPreisFormat.datum(buchung.getAbreise())).setHeader("Abreise");
         tabelle.addColumn(buchung -> buchung.anzahlNaechte()).setHeader("Nächte");
-        tabelle.addColumn(buchung -> Anzeige.preis(buchung.getGesamtpreis())).setHeader("Gesamtpreis");
+        tabelle.addColumn(buchung -> DatumUndPreisFormat.preis(buchung.getGesamtpreis())).setHeader("Gesamtpreis");
         tabelle.addColumn(buchung -> buchung.getStatus().getBezeichnung()).setHeader("Status");
 
         tabelle.setItems(buchungen);

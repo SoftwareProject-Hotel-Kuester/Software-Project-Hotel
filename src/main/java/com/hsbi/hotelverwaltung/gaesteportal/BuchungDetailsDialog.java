@@ -21,12 +21,12 @@ class BuchungDetailsDialog extends Dialog {
         add(new Paragraph("Zimmer: " + zimmer.getZimmerNr() + ", " + zimmer.getEtage() + ". Etage"));
         add(new Paragraph("Klasse: " + zimmer.getZimmerklasse().getBezeichnung()));
         add(new Paragraph("Belegungsart: " + zimmer.getBelegungsart().getBezeichnung()));
-        add(new Paragraph("Zeitraum: " + Anzeige.datum(buchung.getAnreise())
-                + " bis " + Anzeige.datum(buchung.getAbreise())));
+        add(new Paragraph("Zeitraum: " + DatumUndPreisFormat.datum(buchung.getAnreise())
+                + " bis " + DatumUndPreisFormat.datum(buchung.getAbreise())));
         add(new Paragraph("Nächte: " + buchung.anzahlNaechte()));
-        add(new Paragraph("Gesamtpreis: " + Anzeige.preis(buchung.getGesamtpreis())));
+        add(new Paragraph("Gesamtpreis: " + DatumUndPreisFormat.preis(buchung.getGesamtpreis())));
         add(new Paragraph("Status: " + buchung.getStatus().getBezeichnung()));
-        add(new Paragraph("Gebucht am: " + Anzeige.datum(buchung.getErstelltAm())));
+        add(new Paragraph("Gebucht am: " + DatumUndPreisFormat.datum(buchung.getErstelltAm())));
 
         // TODO UC19 und UC20: Klick-Aktionen ergänzen. Aktivieren nur, wenn
         // buchung.kannVomGastGeaendertWerden(LocalDate.now()) true liefert

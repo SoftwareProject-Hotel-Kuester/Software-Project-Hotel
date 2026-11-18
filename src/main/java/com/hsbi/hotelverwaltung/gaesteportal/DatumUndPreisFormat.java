@@ -8,9 +8,9 @@ import java.util.Locale;
 
 // Hilfsklasse, damit Datum und Preis auf allen Seiten des Gästeportals
 // gleich aussehen, z. B. "15.06.2027" und "360,00 €".
-// Die Methoden sind static: Man ruft sie direkt auf, z. B. Anzeige.datum(...),
+// Die Methoden sind static: Man ruft sie direkt auf, z. B. DatumUndPreisFormat.datum(...),
 // ohne vorher ein Objekt zu erzeugen.
-class Anzeige {
+class DatumUndPreisFormat {
 
     private static final DateTimeFormatter DATUMSFORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
