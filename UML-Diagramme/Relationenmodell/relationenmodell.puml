@@ -73,7 +73,7 @@ map "<i>Preis</i>" as Preis {
 }
 
 map "<i>Zimmer</i>" as Zimmer {
-  <i>PK</i>\n\n\n\n\n\n\n => <u>ZIMMER_NR</u>\nETAGE\nBELEGUNGSART\nZIMMERKLASSE\nAUSSTATTUNG\nZIMMERSTATUS\nREINIGUNGSSTATUS\nSPERRGRUND
+  <i>PK</i>\n\n\n\n\n\n => <u>ZIMMER_NR</u>\nETAGE\nBELEGUNGSART\nZIMMERKLASSE\nZIMMERSTATUS\nREINIGUNGSSTATUS\nSPERRGRUND
 }
 
 map "<i>Reinigungsliste</i>" as Reinigungsliste {

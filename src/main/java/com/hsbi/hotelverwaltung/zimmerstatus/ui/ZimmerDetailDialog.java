@@ -23,13 +23,10 @@ class ZimmerDetailDialog extends Dialog {
         setHeaderTitle("Zimmer " + zimmer.zimmerNr());
         setWidth("min(32rem, 95vw)");
 
-        String ausstattung = zimmer.ausstattung() == null || zimmer.ausstattung().isBlank()
-                ? "–" : zimmer.ausstattung();
         VerticalLayout daten = new VerticalLayout(
                 zeile("Etage", new Span(zimmer.etage() + ". Etage")),
                 zeile("Klasse", new Span(zimmer.zimmerklasse().getBezeichnung())),
                 zeile("Belegungsart", new Span(zimmer.belegungsart().getBezeichnung())),
-                zeile("Ausstattung", new Span(ausstattung)),
                 zeile("Belegung", Anzeige.status(zimmer.zimmerstatus())),
                 zeile("Reinigung", Anzeige.status(zimmer.reinigungsstatus())));
         daten.setPadding(false);

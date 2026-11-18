@@ -152,7 +152,8 @@ public class ZimmerService {
     }
 
     // Löscht ein Zimmer aus der Datenbank (UC34 LöscheZimmer, Schritte 6 und 7).
-    // Regel: Ein Zimmer mit Buchungen (auch alten oder stornierten) darf nicht gelöscht werden (UC34, E1).
+    // Regel: Ein belegtes Zimmer und ein Zimmer mit Buchungen (auch alten oder stornierten)
+    // darf nicht gelöscht werden (UC34, E1).
     // Sonst gingen Buchungen und Rechnungsdaten verloren. Solche Zimmer sperrt man stattdessen (UC26).
     // Bekommt: die Zimmernummer. Gibt nichts zurück.
     // Wirft eine IllegalArgumentException, wenn das Zimmer nicht gelöscht werden darf.
@@ -160,14 +161,19 @@ public class ZimmerService {
         // Schritt 1: Das Zimmer laden.
         Zimmer zimmer = ladeZimmer(zimmerNr);
 
-        // Schritt 2: Prüfen, ob es Buchungen zu diesem Zimmer gibt.
+        // Schritt 2: Ein belegtes Zimmer darf nicht gelöscht werden, weil gerade ein Gast darin wohnt.
+        if (zimmer.istBelegt()) {
+            throw new IllegalArgumentException("Zimmer " + zimmerNr + " ist belegt und kann nicht gelöscht werden.");
+        }
+
+        // Schritt 3: Prüfen, ob es Buchungen zu diesem Zimmer gibt.
         List<Buchung> buchungen = buchungRepository.findByZimmer(zimmer);
         if (!buchungen.isEmpty()) {
             throw new IllegalArgumentException("Zimmer " + zimmerNr + " hat Buchungen und kann nicht gelöscht werden. "
                     + "Bitte das Zimmer stattdessen sperren.");
         }
 
-        // Schritt 3: Löschen.
+        // Schritt 4: Löschen.
         // Hängen noch andere Daten am Zimmer (z. B. Defektmeldungen), verhindert die Datenbank
         // das Löschen und meldet eine DataIntegrityViolationException. Die fangen wir hier ab
         // und geben eine verständliche Meldung weiter.

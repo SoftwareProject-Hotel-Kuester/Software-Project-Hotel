@@ -63,11 +63,10 @@ class Zimmer #E6F4EA {
     - etage: int
     - belegungsart: Belegungsart
     - zimmerklasse: Zimmerklasse
-    - ausstattung: String
     - zimmerstatus: Zimmerstatus
     - reinigungsstatus: Reinigungsstatus
     - sperrgrund: String
-    + aendern(belegungsart: Belegungsart, zimmerklasse: Zimmerklasse, ausstattung: String): void
+    + aendern(belegungsart: Belegungsart, zimmerklasse: Zimmerklasse): void
     + istVerfuegbar(von: LocalDate, bis: LocalDate): boolean
     + hatKuenftigeBuchungen(): boolean
     + reinigungsstatusAendern(neu: Reinigungsstatus): void
