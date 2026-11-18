@@ -38,8 +38,6 @@ public class Zimmer {
     @Enumerated(EnumType.STRING)
     private Zimmerklasse zimmerklasse;
 
-    private String ausstattung;
-
     @Enumerated(EnumType.STRING)
     private Zimmerstatus zimmerstatus;
 
@@ -187,14 +185,6 @@ public class Zimmer {
 
     public void setZimmerklasse(Zimmerklasse zimmerklasse) {
         this.zimmerklasse = zimmerklasse;
-    }
-
-    public String getAusstattung() {
-        return ausstattung;
-    }
-
-    public void setAusstattung(String ausstattung) {
-        this.ausstattung = ausstattung;
     }
 
     public Zimmerstatus getZimmerstatus() {

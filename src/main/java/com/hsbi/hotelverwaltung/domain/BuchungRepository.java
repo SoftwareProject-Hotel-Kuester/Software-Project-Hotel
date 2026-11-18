@@ -12,6 +12,9 @@ public interface BuchungRepository extends JpaRepository<Buchung, Integer> {
     /** Alle Buchungen eines Gastes (UC13, UC18). */
     List<Buchung> findByGast(Gast gast);
 
+    /** Alle Buchungen eines Zimmers, egal mit welchem Status (UC02: künftige Buchungen prüfen, Zimmer löschen). */
+    List<Buchung> findByZimmer(Zimmer zimmer);
+
     /**
      * Gibt es für das Zimmer eine Buchung, die sich mit dem Zeitraum überschneidet (UC04)?
      * Zwei Zeiträume überschneiden sich, wenn die vorhandene Anreise vor der

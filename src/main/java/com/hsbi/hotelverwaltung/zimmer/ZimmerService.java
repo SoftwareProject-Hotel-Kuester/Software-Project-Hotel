@@ -1,14 +1,21 @@
 package com.hsbi.hotelverwaltung.zimmer;
 
 import com.hsbi.hotelverwaltung.domain.Belegungsart;
+import com.hsbi.hotelverwaltung.domain.Buchung;
+import com.hsbi.hotelverwaltung.domain.BuchungRepository;
+import com.hsbi.hotelverwaltung.domain.Buchungsstatus;
 import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.ZimmerRepository;
 import com.hsbi.hotelverwaltung.domain.Zimmerklasse;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
-// Fachregeln rund um Zimmer. Gehört zu UC01 LegeZimmerAn.
+// Fachregeln rund um Zimmer. Gehört zu UC01 LegeZimmerAn, UC02 ÄndereZimmer und UC34 LöscheZimmer.
 // Ablauf: View → ZimmerService → ZimmerRepository → Datenbank.
 // Die View spricht nie direkt mit der Datenbank.
 //
@@ -20,10 +27,14 @@ public class ZimmerService {
     // Über das Repository lesen und speichern wir Zimmer in der Datenbank.
     private final ZimmerRepository zimmerRepository;
 
-    // Konstruktor: Spring übergibt das Repository automatisch, weil es hier als Parameter steht.
-    // Bekommt: das ZimmerRepository. Gibt nichts zurück.
-    public ZimmerService(ZimmerRepository zimmerRepository) {
+    // Über das Repository lesen wir die Buchungen eines Zimmers (UC02, Schritt 6, und Löschen).
+    private final BuchungRepository buchungRepository;
+
+    // Konstruktor: Spring übergibt die Repositories automatisch, weil sie hier als Parameter stehen.
+    // Bekommt: das ZimmerRepository und das BuchungRepository. Gibt nichts zurück.
+    public ZimmerService(ZimmerRepository zimmerRepository, BuchungRepository buchungRepository) {
         this.zimmerRepository = zimmerRepository;
+        this.buchungRepository = buchungRepository;
     }
 
     // Prüft, ob es schon ein Zimmer mit dieser Nummer gibt (UC01, Schritt 4).
@@ -81,8 +92,111 @@ public class ZimmerService {
 
     // Lädt alle Zimmer aus der Datenbank, z. B. für die Tabelle in der View (UC01).
     // Bekommt: nichts.
-    // Gibt zurück: Liste aller Zimmer (leer, wenn es noch keine gibt).
+    // Gibt zurück: Liste aller Zimmer, sortiert nach Zimmernummer (leer, wenn es noch keine gibt).
     public List<Zimmer> alleZimmer() {
-        return zimmerRepository.findAll();
+        // Sort.by("zimmerNr"): Die Datenbank liefert die Zimmer aufsteigend nach Nummer.
+        // Ohne Sortierung wäre die Reihenfolge zufällig, z. B. nach jeder Änderung anders.
+        return zimmerRepository.findAll(Sort.by("zimmerNr"));
+    }
+
+    // Ändert Belegungsart und Klasse eines bestehenden Zimmers (UC02 ÄndereZimmer).
+    // Zimmernummer und Etage werden nicht geändert: Laut UC02 darf die Hotelleitung nur
+    // diese Werte ändern. Die Nummer ist außerdem der Schlüssel, an dem die Buchungen hängen.
+    // Bekommt: die Nummer des Zimmers und die neuen Werte aus der Eingabemaske.
+    // Gibt zurück: das geänderte und gespeicherte Zimmer.
+    // Wirft eine IllegalArgumentException, wenn es das Zimmer nicht gibt oder eine Auswahl fehlt.
+    public Zimmer zimmerAendern(int zimmerNr, Belegungsart belegungsart, Zimmerklasse zimmerklasse) {
+        // Schritt 1: Pflichtauswahl prüfen (UC02, Schritt 5).
+        // Ohne Belegungsart und Klasse kann später kein Preis berechnet werden (UC05).
+        if (belegungsart == null) {
+            throw new IllegalArgumentException("Bitte eine Belegungsart auswählen.");
+        }
+        if (zimmerklasse == null) {
+            throw new IllegalArgumentException("Bitte eine Zimmerklasse auswählen.");
+        }
+
+        // Schritt 2: Das Zimmer aus der Datenbank laden.
+        Zimmer zimmer = ladeZimmer(zimmerNr);
+
+        // Schritt 3: Die neuen Werte setzen.
+        // Bestehende Buchungen bleiben unverändert, weil jede Buchung ihren
+        // eigenen Gesamtpreis gespeichert hat (Nachbedingung UC02).
+        zimmer.setBelegungsart(belegungsart);
+        zimmer.setZimmerklasse(zimmerklasse);
+
+        // Schritt 4: Speichern und das geänderte Zimmer zurückgeben (UC02, Schritt 7).
+        return zimmerRepository.save(zimmer);
+    }
+
+    // Sucht alle künftigen Buchungen eines Zimmers (UC02, Schritt 6).
+    // "Künftig" heißt: Die Buchung ist gebucht oder eingecheckt, und die Abreise ist heute oder später.
+    // Stornierte und ausgecheckte Buchungen zählen nicht, weil sie vorbei sind.
+    // Bekommt: die Zimmernummer.
+    // Gibt zurück: Liste der künftigen Buchungen (leer, wenn es keine gibt).
+    // Wirft eine IllegalArgumentException, wenn es das Zimmer nicht gibt.
+    public List<Buchung> kuenftigeBuchungen(int zimmerNr) {
+        Zimmer zimmer = ladeZimmer(zimmerNr);
+        List<Buchung> alleBuchungen = buchungRepository.findByZimmer(zimmer);
+        List<Buchung> kuenftigeBuchungen = new ArrayList<>();
+        LocalDate heute = LocalDate.now();
+
+        // Jede Buchung des Zimmers einzeln prüfen.
+        for (Buchung buchung : alleBuchungen) {
+            boolean istGebuchtOderEingecheckt = buchung.getStatus() == Buchungsstatus.GEBUCHT
+                    || buchung.getStatus() == Buchungsstatus.EINGECHECKT;
+            if (istGebuchtOderEingecheckt && buchung.istAnstehend(heute)) {
+                kuenftigeBuchungen.add(buchung);
+            }
+        }
+        return kuenftigeBuchungen;
+    }
+
+    // Löscht ein Zimmer aus der Datenbank (UC34 LöscheZimmer, Schritte 6 und 7).
+    // Regel: Ein belegtes Zimmer und ein Zimmer mit Buchungen (auch alten oder stornierten)
+    // darf nicht gelöscht werden (UC34, E1).
+    // Sonst gingen Buchungen und Rechnungsdaten verloren. Solche Zimmer sperrt man stattdessen (UC26).
+    // Bekommt: die Zimmernummer. Gibt nichts zurück.
+    // Wirft eine IllegalArgumentException, wenn das Zimmer nicht gelöscht werden darf.
+    public void zimmerLoeschen(int zimmerNr) {
+        // Schritt 1: Das Zimmer laden.
+        Zimmer zimmer = ladeZimmer(zimmerNr);
+
+        // Schritt 2: Ein belegtes Zimmer darf nicht gelöscht werden, weil gerade ein Gast darin wohnt.
+        if (zimmer.istBelegt()) {
+            throw new IllegalArgumentException("Zimmer " + zimmerNr + " ist belegt und kann nicht gelöscht werden.");
+        }
+
+        // Schritt 3: Prüfen, ob es Buchungen zu diesem Zimmer gibt.
+        List<Buchung> buchungen = buchungRepository.findByZimmer(zimmer);
+        if (!buchungen.isEmpty()) {
+            throw new IllegalArgumentException("Zimmer " + zimmerNr + " hat Buchungen und kann nicht gelöscht werden. "
+                    + "Bitte das Zimmer stattdessen sperren.");
+        }
+
+        // Schritt 4: Löschen.
+        // Hängen noch andere Daten am Zimmer (z. B. Defektmeldungen), verhindert die Datenbank
+        // das Löschen und meldet eine DataIntegrityViolationException. Die fangen wir hier ab
+        // und geben eine verständliche Meldung weiter.
+        try {
+            zimmerRepository.delete(zimmer);
+        } catch (DataIntegrityViolationException fehler) {
+            throw new IllegalArgumentException("Zimmer " + zimmerNr + " kann nicht gelöscht werden, "
+                    + "weil noch andere Daten (z. B. Defektmeldungen) daran hängen.");
+        }
+    }
+
+    // Lädt ein Zimmer anhand seiner Nummer aus der Datenbank.
+    // Bekommt: die Zimmernummer.
+    // Gibt zurück: das Zimmer.
+    // Wirft eine IllegalArgumentException, wenn es das Zimmer nicht gibt,
+    // z. B. weil jemand anderes es inzwischen gelöscht hat.
+    private Zimmer ladeZimmer(int zimmerNr) {
+        // findById liefert eine "Optional"-Hülle, weil es das Zimmer vielleicht nicht gibt.
+        // orElse(null) packt das Zimmer aus. Gibt es kein Zimmer, kommt null heraus.
+        Zimmer zimmer = zimmerRepository.findById(zimmerNr).orElse(null);
+        if (zimmer == null) {
+            throw new IllegalArgumentException("Das Zimmer " + zimmerNr + " gibt es nicht mehr.");
+        }
+        return zimmer;
     }
 }
