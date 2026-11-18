@@ -14,3 +14,9 @@ spring:
     # Verbindung zu Mailpit aus der compose.yaml
     host: localhost
     port: 1025
+hotel:
+  # Absender aller E-Mails der App.
+  mail-absender: noreply@sparrenhof.test
+  # Basisadresse der App für Links in E-Mails (z. B. Bestätigungslink).
+  # Im Betrieb steht hier die echte Adresse.
+  basis-url: http://localhost:8080

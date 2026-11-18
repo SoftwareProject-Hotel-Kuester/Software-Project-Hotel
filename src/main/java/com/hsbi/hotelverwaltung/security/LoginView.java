@@ -1,6 +1,6 @@
 package com.hsbi.hotelverwaltung.security;
 
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -8,10 +8,14 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.hsbi.hotelverwaltung.registrierung.RegistrationView;
+import com.vaadin.flow.router.RouterLink;
 
 /**
- * Anmeldeseite unter /login. Das Formular schickt E-Mail und Passwort an
- * Spring Security, die Prüfung passiert nicht in dieser Klasse.
+ * Anmeldeseite unter /login für alle: Gäste, Mitarbeiter und Hotelleitung.
+ * Das Formular schickt E-Mail und Passwort an Spring Security, die Prüfung
+ * passiert nicht in dieser Klasse. Welche Startseite danach erscheint, entscheidet
+ * die Rolle (siehe HomeView).
  *
  * Begriffe:
  * BeforeEnterObserver: Vaadin ruft beforeEnter auf, bevor die Seite angezeigt wird.
@@ -28,12 +32,17 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         setJustifyContentMode(JustifyContentMode.CENTER);
         setAlignItems(Alignment.CENTER);
 
+        // Der Pfad beginnt mit "/", damit das Logo von jeder Adresse aus gefunden wird.
+        Image logo = new Image("/images/logo.png", "Hotel Sparrenhof");
+        logo.setHeight("140px");
+
         // Spring Security nimmt das Formular unter /login per POST entgegen.
         loginForm.setAction("login");
         loginForm.setForgotPasswordButtonVisible(false);
         loginForm.setI18n(deutscheTexte());
 
-        add(new H1("Hotel Sparrenhof"), loginForm);
+        add(logo, loginForm,
+                new RouterLink("Noch kein Konto? Jetzt registrieren", RegistrationView.class));
     }
 
     // Bei falschen Zugangsdaten leitet Spring Security auf /login?error um.
