@@ -16,7 +16,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-
+import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 // Seite "Zimmerverwaltung" der Hotelleitung (wie im Mockup "Übersicht aller Zimmer").
 // Gehört zu UC01 LegeZimmerAn, UC02 ÄndereZimmer und UC34 LöscheZimmer.
 // Oben stehen die Buttons "Zimmer anlegen", "Bearbeiten" und "Löschen", darunter eine Tabelle mit allen Zimmern.
@@ -28,9 +28,8 @@ import jakarta.annotation.security.RolesAllowed;
 // @RolesAllowed("HOTELLEITUNG"): Nur angemeldete Personen mit der Rolle Hotelleitung dürfen die Seite öffnen.
 //   Laut UC01, UC02 und UC34 ist die Hotelleitung der einzige Nutzer. Wer nicht angemeldet ist,
 //   landet automatisch auf der Login-Seite. Ein normaler Mitarbeiter oder Gast wird abgewiesen.
-// TODO sobald es ein Menü gibt (Philipp): @Route(value = "verwaltung/zimmer", layout = MainLayout.class)
+@Route(value = "verwaltung/zimmer", layout = MitarbeiterLayout.class)
 // extends VerticalLayout: Die Bestandteile der Seite stehen untereinander.
-@Route("verwaltung/zimmer")
 @PageTitle("Zimmerverwaltung | Hotel Sparrenhof")
 @RolesAllowed("HOTELLEITUNG")
 public class ZimmerverwaltungView extends VerticalLayout {

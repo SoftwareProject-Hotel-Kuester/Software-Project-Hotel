@@ -1,0 +1,47 @@
+html {
+    /* Akzentfarbe: überall, wo Aura "primär" meint (Buttons, aktives Menü, Fokus). */
+    --aura-accent-color-light: #3f5a3f;   /* Logo-Grün, für Buttons etwas heller als die Schrift */
+    --aura-accent-color-dark: #9bb89b;    /* helleres Grün für den Dunkelmodus */
+
+    /* Hintergrund leicht warm statt bläulich, passend zum Beige des Logos. */
+    --aura-background-color-light: oklch(0.96 0.012 95);
+
+    /* Kein Rand um den Inhalt, wie im Entwurf. Standard ist ein abgerundeter Rahmen. */
+    --aura-app-layout-inset: 0px;
+}
+
+/* Eigene Farben für Bereiche, die nicht von Aura kommen. */
+:root {
+    --sparrenhof-gold: #a88860;   /* Logo-Gold, für Linien und Hervorhebungen */
+}
+/* Kopfzeile */
+.kopfzeile-name { font-size: var(--aura-font-size-xl); font-weight: 600; }
+.kopfzeile-bereich, .kopfzeile-email { color: var(--vaadin-text-color-secondary); font-size: var(--aura-font-size-s); }
+.kopfzeile-wer { display: flex; flex-direction: column; line-height: 1.25; }
+.rollen-badge {
+    font-size: var(--aura-font-size-xs);
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--aura-accent-color) 15%, transparent);
+    color: var(--aura-accent-text-color);
+}
+/* Kacheln der Startseiten */
+.kachel-raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    width: 100%;
+}
+.kachel {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--vaadin-border-color-secondary);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+.kachel h3 { margin: 0; font-size: var(--aura-font-size-l); }
+.kachel p { margin: 0 0 0.5rem; color: var(--vaadin-text-color-secondary); flex: 1; }
+.kachel-aus { opacity: 0.6; }

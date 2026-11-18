@@ -14,7 +14,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
+import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,11 +27,11 @@ import java.util.List;
  * alle freien Zimmer in einer Tabelle angezeigt.
  */
 // @Route: Die Seite ist im Browser unter /verfuegbarkeit erreichbar.
-// @AnonymousAllowed: Vorläufig ohne Login aufrufbar. Sobald es den Login gibt
-// (UC15), wird das durch eine Rollenprüfung für Mitarbeiter ersetzt.
-@Route("verfuegbarkeit")
+// Rahmen des Mitarbeiterportals (MitarbeiterLayout).
+// @RolesAllowed: Nur Mitarbeiter und Hotelleitung dürfen die Verfügbarkeit prüfen (UC04).
+@Route(value = "verfuegbarkeit", layout = MitarbeiterLayout.class)
 @PageTitle("Verfügbarkeit prüfen")
-@AnonymousAllowed
+@RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
 public class VerfuegbarkeitView extends VerticalLayout {
 
     private final VerfuegbarkeitService verfuegbarkeitService;

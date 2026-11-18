@@ -18,9 +18,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 //import com.vaadin.flow.server.auth.AnonymousAllowed;
 import jakarta.annotation.security.RolesAllowed;
+import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 
 
-@Route("zimmerstatus")
+@Route(value = "zimmerstatus", layout = MitarbeiterLayout.class)
 @PageTitle("Zimmerstatus | Hotel Sparrenhof")
 //@AnonymousAllowed // TODO nach dem Login: @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
 @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})

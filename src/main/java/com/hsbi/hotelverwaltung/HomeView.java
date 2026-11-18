@@ -1,54 +1,40 @@
 package com.hsbi.hotelverwaltung;
 
-import com.hsbi.hotelverwaltung.domain.Benutzer;
-import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
-import com.hsbi.hotelverwaltung.domain.Mitarbeiter;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
+import com.hsbi.hotelverwaltung.gaesteportal.GaesteStartView;
+import com.hsbi.hotelverwaltung.startseite.MitarbeiterStartView;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 
 /**
- * Startseite unter "/". Nur für angemeldete Personen, egal mit welcher Rolle.
- * Zeigt den Namen der Person und einen Button zum Abmelden.
+ * Einstiegsadresse "/". Zeigt selbst nichts an, sondern leitet je nach Rolle
+ * zur passenden Startseite weiter. Hierher schickt Spring Security nach dem Login.
  *
  * Begriffe:
- * PermitAll: Jede angemeldete Person darf die Seite sehen, anonyme nicht.
- * AuthenticationContext: Vaadin-Hilfsklasse, die weiß, wer gerade angemeldet ist.
+ * PermitAll: Jede angemeldete Person darf rein, anonyme werden zum Login geschickt.
+ * BeforeEnterObserver: Vaadin ruft beforeEnter auf, bevor die Seite angezeigt wird.
+ * forwardTo: Leitet zu einer anderen Seite weiter, ohne dass diese hier erscheint.
  */
 @Route("")
-@PageTitle("Startseite | Hotel Sparrenhof")
 @PermitAll
-public class HomeView extends VerticalLayout {
+public class HomeView extends Div implements BeforeEnterObserver {
 
-    // transient, weil AuthenticationContext nicht serialisierbar ist (so steht es in der Vaadin-Doku).
+    // transient, weil AuthenticationContext nicht serialisierbar ist (wie in Kopfzeile).
     private final transient AuthenticationContext authContext;
 
-    // Spring übergibt AuthenticationContext und Repository automatisch.
-    public HomeView(AuthenticationContext authContext, BenutzerRepository benutzerRepository) {
+    public HomeView(AuthenticationContext authContext) {
         this.authContext = authContext;
-
-        // Anmeldename (E-Mail) holen und die Person in der Datenbank suchen.
-        String begruessung = authContext.getPrincipalName()
-                .flatMap(benutzerRepository::findByEmailIgnoreCase)
-                .map(benutzer -> "Willkommen, " + benutzer.getVollerName()
-                        + " (" + rolleVon(benutzer) + ")")
-                .orElse("Willkommen");
-
-        Button abmelden = new Button("Abmelden", klick -> this.authContext.logout());
-
-        add(new H1("Hotel Sparrenhof"), new Span(begruessung), abmelden);
     }
 
-    // Lesbarer Name der Rolle für die Anzeige. Gäste haben keine gespeicherte Rolle.
-    private String rolleVon(Benutzer benutzer) {
-        if (benutzer instanceof Mitarbeiter mitarbeiter) {
-            return mitarbeiter.getRolle().getBezeichnung();
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (authContext.hasAnyRole("MITARBEITER", "HOTELLEITUNG")) {
+            event.forwardTo(MitarbeiterStartView.class);
+        } else {
+            event.forwardTo(GaesteStartView.class);
         }
-        return "Gast";
     }
 }
