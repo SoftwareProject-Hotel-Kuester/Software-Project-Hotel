@@ -1,0 +1,82 @@
+@startuml LegeGastprofilAn
+hide footbox
+actor Mitarbeiter
+boundary GastAnlegenView
+boundary DublettenDialog
+control GastService
+entity "g: Gast" as Gast
+database "Datenbank" as DB
+
+== 1. Gastdaten eingeben ==
+Mitarbeiter -> GastAnlegenView: öffneGastAnlegen()
+activate GastAnlegenView
+Mitarbeiter -> GastAnlegenView: speichern(vorname, nachname, geburtsdatum, email,\ntelefon, anschrift, praeferenzen)
+GastAnlegenView -> GastAnlegenView: daten = leseEingaben()
+
+== 2. Eingaben prüfen ==
+GastAnlegenView -> GastService: pruefeEingaben(daten)
+activate GastService
+
+alt Eingabe ungültig (E2)
+    GastService --> GastAnlegenView: Fehler
+    Mitarbeiter <-- GastAnlegenView: zeigeFehler(), Eingaben bleiben stehen
+else Eingaben gültig
+    GastService --> GastAnlegenView: ok
+
+    == 3. Dubletten suchen ==
+    GastAnlegenView -> GastService: findeDubletten(daten)
+    GastService -> DB: findByEmailIgnoreCase(email)
+    activate DB
+    DB --> GastService: Gast mit gleicher E-Mail (oder keiner)
+    GastService -> DB: findByVornameAndNachnameAndGeburtsdatum(...)
+    DB --> GastService: Gäste mit gleichem Namen und Geburtsdatum
+    deactivate DB
+    GastService --> GastAnlegenView: dubletten
+
+    alt keine Dublette
+        == 4. Gast anlegen und speichern ==
+        GastAnlegenView -> GastService: gastprofilAnlegen(daten, false)
+        GastService -> GastService: pruefeEingaben(daten), emailIstVergeben(email)
+        GastService -> Gast: <<create>> (email, vorname, nachname, geburtsdatum)
+        activate Gast
+        GastService -> Gast: setHatKonto(false), setAdresse(adresse)
+        Gast --> GastService: g
+        deactivate Gast
+        GastService -> DB: save(g)
+        activate DB
+        DB --> GastService: g mit Gastnummer
+        deactivate DB
+        GastService --> GastAnlegenView: g
+        Mitarbeiter <-- GastAnlegenView: zeigeErfolg(gastNr), Felder leeren
+
+    else Dublette gefunden (E1)
+        GastAnlegenView -> GastService: emailIstVergeben(email)
+        GastService --> GastAnlegenView: neuAnlegenErlaubt = nicht vergeben
+        GastAnlegenView -> DublettenDialog: <<create>> (dubletten, neuAnlegenErlaubt)
+        activate DublettenDialog
+        Mitarbeiter <-- DublettenDialog: zeigeVorhandeneProfile()
+
+        alt Mitarbeiter verwendet bestehendes Profil
+            Mitarbeiter -> DublettenDialog: bestehendesProfilVerwenden(gast)
+            DublettenDialog --> GastAnlegenView: bestehendenGastVerwenden(gast)
+            Mitarbeiter <-- GastAnlegenView: zeigeErfolg(gastNr), nichts gespeichert
+        else Mitarbeiter legt trotzdem neu an (nur bei anderer E-Mail)
+            Mitarbeiter -> DublettenDialog: trotzdemNeuAnlegen()
+            DublettenDialog --> GastAnlegenView: anlegen(daten, true)
+            GastAnlegenView -> GastService: gastprofilAnlegen(daten, true)
+            note right of GastService
+              weiter wie in Schritt 4
+            end note
+            GastService --> GastAnlegenView: g
+            Mitarbeiter <-- GastAnlegenView: zeigeErfolg(gastNr), Felder leeren
+        else Mitarbeiter bricht ab
+            Mitarbeiter -> DublettenDialog: abbrechen()
+            Mitarbeiter <-- GastAnlegenView: Eingaben bleiben stehen
+        end
+        deactivate DublettenDialog
+    end
+end
+
+deactivate GastService
+deactivate GastAnlegenView
+@enduml
