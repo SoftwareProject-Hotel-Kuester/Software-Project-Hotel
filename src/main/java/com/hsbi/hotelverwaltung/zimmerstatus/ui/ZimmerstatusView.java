@@ -16,12 +16,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+//import com.vaadin.flow.server.auth.AnonymousAllowed;
+import jakarta.annotation.security.RolesAllowed;
 
 
 @Route("zimmerstatus")
 @PageTitle("Zimmerstatus | Hotel Sparrenhof")
-@AnonymousAllowed // TODO nach dem Login: @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
+//@AnonymousAllowed // TODO nach dem Login: @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
+@RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
 public class ZimmerstatusView extends VerticalLayout {
 
     private final FacilityService facilityService;
