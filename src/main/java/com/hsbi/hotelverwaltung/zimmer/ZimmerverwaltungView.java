@@ -95,7 +95,6 @@ public class ZimmerverwaltungView extends VerticalLayout {
         tabelle.addColumn(zimmer -> zimmer.getEtage()).setHeader("Etage");
         tabelle.addColumn(zimmer -> zimmer.getZimmerklasse().getBezeichnung()).setHeader("Klasse");
         tabelle.addColumn(zimmer -> zimmer.getBelegungsart().getBezeichnung()).setHeader("Belegungsart");
-        tabelle.addColumn(zimmer -> zimmer.getAusstattung()).setHeader("Ausstattung");
         // Belegung und Reinigungsstatus stehen hier bewusst nicht.
         // Dafür gibt es die eigene Seite "Zimmerstatus" (Gruppe 7), sonst stünde alles doppelt.
 

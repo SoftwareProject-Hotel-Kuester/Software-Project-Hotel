@@ -99,14 +99,13 @@ public class ZimmerService {
         return zimmerRepository.findAll(Sort.by("zimmerNr"));
     }
 
-    // Ändert Belegungsart, Klasse und Ausstattung eines bestehenden Zimmers (UC02 ÄndereZimmer).
+    // Ändert Belegungsart und Klasse eines bestehenden Zimmers (UC02 ÄndereZimmer).
     // Zimmernummer und Etage werden nicht geändert: Laut UC02 darf die Hotelleitung nur
-    // diese drei Werte ändern. Die Nummer ist außerdem der Schlüssel, an dem die Buchungen hängen.
+    // diese Werte ändern. Die Nummer ist außerdem der Schlüssel, an dem die Buchungen hängen.
     // Bekommt: die Nummer des Zimmers und die neuen Werte aus der Eingabemaske.
     // Gibt zurück: das geänderte und gespeicherte Zimmer.
     // Wirft eine IllegalArgumentException, wenn es das Zimmer nicht gibt oder eine Auswahl fehlt.
-    public Zimmer zimmerAendern(int zimmerNr, Belegungsart belegungsart, Zimmerklasse zimmerklasse,
-                                String ausstattung) {
+    public Zimmer zimmerAendern(int zimmerNr, Belegungsart belegungsart, Zimmerklasse zimmerklasse) {
         // Schritt 1: Pflichtauswahl prüfen (UC02, Schritt 5).
         // Ohne Belegungsart und Klasse kann später kein Preis berechnet werden (UC05).
         if (belegungsart == null) {
@@ -124,7 +123,6 @@ public class ZimmerService {
         // eigenen Gesamtpreis gespeichert hat (Nachbedingung UC02).
         zimmer.setBelegungsart(belegungsart);
         zimmer.setZimmerklasse(zimmerklasse);
-        zimmer.setAusstattung(ausstattung);
 
         // Schritt 4: Speichern und das geänderte Zimmer zurückgeben (UC02, Schritt 7).
         return zimmerRepository.save(zimmer);

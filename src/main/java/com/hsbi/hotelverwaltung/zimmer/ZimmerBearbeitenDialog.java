@@ -14,14 +14,13 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextArea;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 // Fenster "Zimmer bearbeiten". Gehört zu UC02 ÄndereZimmer.
 // Es sieht aus wie das Fenster "Zimmer anlegen", nur sind die Werte des Zimmers schon eingetragen.
-// Laut UC02 darf die Hotelleitung nur Belegungsart, Klasse und Ausstattung ändern.
+// Die Hotelleitung darf hier nur Belegungsart und Klasse ändern.
 // Zimmernummer und Etage werden deshalb nur angezeigt.
 public class ZimmerBearbeitenDialog extends Dialog {
 
@@ -42,8 +41,6 @@ public class ZimmerBearbeitenDialog extends Dialog {
     private final IntegerField etage = new IntegerField("Etage");
     private final ComboBox<Belegungsart> belegungsart = new ComboBox<>("Belegungsart");
     private final ComboBox<Zimmerklasse> zimmerklasse = new ComboBox<>("Zimmerklasse");
-    // TextArea: Eingabefeld für längeren Text über mehrere Zeilen.
-    private final TextArea ausstattung = new TextArea("Ausstattung");
 
     // Baut das Fenster auf und trägt die aktuellen Werte des Zimmers ein (UC02, Schritt 4).
     // Bekommt: den ZimmerService, das ausgewählte Zimmer und die Methode, die nach dem Speichern laufen soll.
@@ -73,20 +70,11 @@ public class ZimmerBearbeitenDialog extends Dialog {
         zimmerklasse.setRequiredIndicatorVisible(true);
         zimmerklasse.setValue(zimmer.getZimmerklasse());
 
-        // Schritt 3: Ausstattung eintragen. Sie ist freiwillig und kann leer sein.
-        // Ein Textfeld darf nicht auf null gesetzt werden, deshalb nur setzen, wenn es einen Text gibt.
-        ausstattung.setPlaceholder("z. B. Balkon, Minibar");
-        if (zimmer.getAusstattung() != null) {
-            ausstattung.setValue(zimmer.getAusstattung());
-        }
-
-        // Schritt 4: Felder in ein Formular setzen.
-        FormLayout formular = new FormLayout(zimmerNr, etage, belegungsart, zimmerklasse, ausstattung);
-        // Die Ausstattung soll über beide Spalten gehen, weil sie längeren Text enthält.
-        formular.setColspan(ausstattung, 2);
+        // Schritt 3: Felder in ein Formular setzen.
+        FormLayout formular = new FormLayout(zimmerNr, etage, belegungsart, zimmerklasse);
         add(formular);
 
-        // Schritt 5: Buttons unten im Fenster.
+        // Schritt 4: Buttons unten im Fenster.
         Button abbrechen = new Button("Abbrechen", klick -> close());
         // "Bestätigen" schließt UC02, Schritt 5 ab.
         Button bestaetigen = new Button("Bestätigen", klick -> bestaetigen());
@@ -170,8 +158,7 @@ public class ZimmerBearbeitenDialog extends Dialog {
     private void speichern() {
         try {
             Zimmer geaendertesZimmer = zimmerService.zimmerAendern(
-                    zimmer.getZimmerNr(), belegungsart.getValue(),
-                    zimmerklasse.getValue(), ausstattung.getValue());
+                    zimmer.getZimmerNr(), belegungsart.getValue(), zimmerklasse.getValue());
 
             Notification erfolg = Notification.show("Zimmer " + geaendertesZimmer.getZimmerNr() + " wurde geändert.");
             erfolg.addThemeVariants(NotificationVariant.SUCCESS);
