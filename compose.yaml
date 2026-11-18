@@ -2,9 +2,12 @@
 # App-Start automatisch hoch, Docker Desktop muss dafür laufen.
 services:
   # Datenbank für alle Daten (Zimmer, Gäste, Buchungen).
-  # Der Port ohne Doppelpunkt ist Absicht: Docker wählt einen freien Port,
-  # Spring Boot liest ihn selbst aus. So gibt es keine Konflikte mit einer
-  # lokal installierten Datenbank.
+  # Der Port ist fest: Auf deinem Rechner ist die Datenbank immer unter
+  # localhost:15432 erreichbar, z. B. für die Datenbankansicht in IntelliJ.
+  # Links vom Doppelpunkt steht der Port auf deinem Rechner, rechts der Port
+  # im Container. Wir nehmen nicht den Standardport 5432, weil der oft schon
+  # von einer lokal installierten PostgreSQL belegt ist. Spring Boot liest den
+  # Port aus dieser Datei, in der application.yaml muss er nicht stehen.
   postgres:
     image: 'postgres:17'
     environment:
@@ -12,7 +15,7 @@ services:
       - 'POSTGRES_USER=hotel'
       - 'POSTGRES_PASSWORD=hotel'
     ports:
-      - '5432'
+      - '15432:5432'
   # Test-Mailserver: Hier landen alle E-Mails der App (z. B. Bestätigungslink
   # bei der Registrierung), es wird nichts wirklich verschickt.
   # Oberfläche im Browser: http://localhost:8025
