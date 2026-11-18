@@ -15,7 +15,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+import jakarta.annotation.security.RolesAllowed;
 
 // Seite "Zimmerverwaltung" der Hotelleitung (wie im Mockup "Übersicht aller Zimmer").
 // Gehört zu UC01 LegeZimmerAn, UC02 ÄndereZimmer und UC34 LöscheZimmer.
@@ -25,13 +25,14 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 //
 // @Route: Die Seite ist im Browser unter http://localhost:8080/verwaltung/zimmer erreichbar.
 // @PageTitle: Text im Browser-Tab.
-// @AnonymousAllowed: Vorläufig darf jeder die Seite öffnen, weil es noch keinen Login gibt.
-// TODO sobald es Login und Menü gibt (Philipp):
-//   @RolesAllowed("HOTELLEITUNG") und @Route(value = "verwaltung/zimmer", layout = MainLayout.class)
+// @RolesAllowed("HOTELLEITUNG"): Nur angemeldete Personen mit der Rolle Hotelleitung dürfen die Seite öffnen.
+//   Laut UC01, UC02 und UC34 ist die Hotelleitung der einzige Nutzer. Wer nicht angemeldet ist,
+//   landet automatisch auf der Login-Seite. Ein normaler Mitarbeiter oder Gast wird abgewiesen.
+// TODO sobald es ein Menü gibt (Philipp): @Route(value = "verwaltung/zimmer", layout = MainLayout.class)
 // extends VerticalLayout: Die Bestandteile der Seite stehen untereinander.
 @Route("verwaltung/zimmer")
 @PageTitle("Zimmerverwaltung | Hotel Sparrenhof")
-@AnonymousAllowed
+@RolesAllowed("HOTELLEITUNG")
 public class ZimmerverwaltungView extends VerticalLayout {
 
     // Über den Service werden die Zimmer geladen, geändert und gelöscht (View → Service → Datenbank).
