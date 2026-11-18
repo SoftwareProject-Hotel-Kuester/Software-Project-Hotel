@@ -19,7 +19,7 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 // Seite "Zimmerverwaltung" der Hotelleitung (wie im Mockup "Übersicht aller Zimmer").
 // Gehört zu UC01 LegeZimmerAn, UC02 ÄndereZimmer und UC34 LöscheZimmer.
-// Oben stehen die Buttons "+ Zimmer anlegen", "Bearbeiten" und "Löschen", darunter eine Tabelle mit allen Zimmern.
+// Oben stehen die Buttons "Zimmer anlegen", "Bearbeiten" und "Löschen", darunter eine Tabelle mit allen Zimmern.
 // Vorne in jeder Zeile ist ein Kreis. Ein Klick auf die Zeile wählt das Zimmer aus (UC02, Schritt 3),
 // danach kann man es bearbeiten oder löschen.
 //
@@ -55,7 +55,7 @@ public class ZimmerverwaltungView extends VerticalLayout {
         // UC01, Schritt 1: Die Hotelleitung ruft die Funktion "Zimmer anlegen" auf.
         // Der Klick öffnet das Fenster. Nach dem Speichern ruft das Fenster
         // tabelleAktualisieren() auf, damit das neue Zimmer sofort in der Tabelle steht.
-        Button zimmerAnlegen = new Button("+ Zimmer anlegen",
+        Button zimmerAnlegen = new Button("Zimmer anlegen",
                 klick -> new ZimmerAnlegenDialog(zimmerService, this::tabelleAktualisieren).open());
         zimmerAnlegen.addThemeVariants(ButtonVariant.PRIMARY);
 
