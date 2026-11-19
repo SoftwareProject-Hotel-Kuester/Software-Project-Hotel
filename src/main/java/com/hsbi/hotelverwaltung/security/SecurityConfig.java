@@ -21,6 +21,11 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Öffentliche Dateien (z. B. das Logo) müssen ohne Anmeldung ladbar sein,
+        // sonst erscheint auf der Login-Seite ein kaputtes Bild. Diese Regel muss
+        // vor dem VaadinSecurityConfigurer stehen.
+        http.authorizeHttpRequests(auth ->
+                auth.requestMatchers("/images/**").permitAll());
         http.with(VaadinSecurityConfigurer.vaadin(), configurer ->
                 // Sagt Vaadin, wohin nicht angemeldete Personen umgeleitet werden.
                 configurer.loginView(LoginView.class));

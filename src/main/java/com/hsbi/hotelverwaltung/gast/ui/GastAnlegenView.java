@@ -17,7 +17,8 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
+import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,11 +31,12 @@ import java.util.Locale;
 //
 // @Route: Die Seite ist im Browser unter /gaeste/neu erreichbar.
 // @AnonymousAllowed: vorläufig darf jeder die Seite öffnen, weil es noch keinen Login gibt.
-// TODO nach dem Login (Gruppe 6): @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
-// TODO sobald es das MainLayout gibt: @Route(value = "gaeste/neu", layout = MainLayout.class)
-@Route("gaeste/neu")
+
+//@RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
+@Route(value = "gaeste/neu", layout = MitarbeiterLayout.class)
 @PageTitle("Gästeprofil anlegen | Hotel Sparrenhof")
-@AnonymousAllowed
+@RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
+
 public class GastAnlegenView extends VerticalLayout {
 
     // Der Service mit den Regeln aus UC11.
