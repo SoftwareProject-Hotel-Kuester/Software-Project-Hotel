@@ -1,5 +1,6 @@
 package com.hsbi.hotelverwaltung.layout;
 
+import com.hsbi.hotelverwaltung.belegung.BelegungsuebersichtView;
 import com.hsbi.hotelverwaltung.startseite.MitarbeiterStartView;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.gast.ui.GastAnlegenView;
@@ -47,7 +48,7 @@ public class MitarbeiterLayout extends AppLayout {
                 eintrag("Verfügbarkeit prüfen", VerfuegbarkeitView.class),
                 eintrag("Neue Buchung", null),
                 eintrag("Buchungen", null),
-                eintrag("Belegungsübersicht", null)));
+                eintrag("Belegungsübersicht", BelegungsuebersichtView.class)));
 
         menue.add(gruppe("Gäste",
                 eintrag("Gast anlegen", GastAnlegenView.class)));
