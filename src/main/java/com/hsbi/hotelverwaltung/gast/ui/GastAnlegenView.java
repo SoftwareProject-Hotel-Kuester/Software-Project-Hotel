@@ -3,132 +3,58 @@ package com.hsbi.hotelverwaltung.gast.ui;
 import com.hsbi.hotelverwaltung.domain.Gast;
 import com.hsbi.hotelverwaltung.gast.GastDaten;
 import com.hsbi.hotelverwaltung.gast.GastService;
+import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 import jakarta.annotation.security.RolesAllowed;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
 // Maske "Gästeprofil anlegen". Gehört zu UC11 LegeGastprofilAn.
 // Ablauf: Mitarbeiter füllt die Felder aus → speichern() → GastService.
 // Die View prüft selbst keine Regeln. Sie liest die Felder aus, fragt den Service
 // und zeigt dessen Antwort (Erfolg oder Fehlermeldung) an.
+// Die Eingabefelder selbst stehen in GastFormular (gemeinsam mit UC12).
 //
-// @Route: Die Seite ist im Browser unter /gaeste/neu erreichbar.
-// @AnonymousAllowed: vorläufig darf jeder die Seite öffnen, weil es noch keinen Login gibt.
-
-//@RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
+// @Route: Die Seite ist im Browser unter /gaeste/neu erreichbar, im Rahmen des Mitarbeiterportals.
+// @RolesAllowed: Nur Mitarbeiter und Hotelleitung dürfen Gäste anlegen.
 @Route(value = "gaeste/neu", layout = MitarbeiterLayout.class)
 @PageTitle("Gästeprofil anlegen | Hotel Sparrenhof")
 @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
-
 public class GastAnlegenView extends VerticalLayout {
 
     // Der Service mit den Regeln aus UC11.
     private final GastService gastService;
 
-    // ---------- Eingabefelder (UC11 Schritt 1) ----------
-    private final TextField vorname = new TextField("Vorname");
-    private final TextField nachname = new TextField("Nachname");
-    private final DatePicker geburtsdatum = new DatePicker("Geburtsdatum");
-    private final EmailField email = new EmailField("E-Mail-Adresse");
-    private final TextField telefon = new TextField("Telefon");
-    private final TextField strasse = new TextField("Straße");
-    private final TextField hausnummer = new TextField("Hausnummer");
-    private final TextField plz = new TextField("PLZ");
-    private final TextField ort = new TextField("Ort");
-    private final TextField land = new TextField("Land");
-    private final TextArea praeferenzen = new TextArea("Präferenzen");
+    // Die Eingabefelder (UC11 Schritt 1).
+    private final GastFormular formular = new GastFormular();
 
     // Konstruktor: baut die Seite auf. Spring übergibt den GastService automatisch.
     // Bekommt: den GastService. Gibt nichts zurück.
     public GastAnlegenView(GastService gastService) {
         this.gastService = gastService;
 
-        felderEinrichten();
-
         // Knöpfe unter dem Formular.
         Button anlegen = new Button("Gästeprofil anlegen", event -> speichern());
         anlegen.addThemeVariants(ButtonVariant.PRIMARY);
-        Button leeren = new Button("Eingaben leeren", event -> felderLeeren());
+        Button leeren = new Button("Eingaben leeren", event -> formular.leeren());
         leeren.addThemeVariants(ButtonVariant.TERTIARY);
 
         // Alles untereinander auf die Seite legen.
-        add(new H2("Gästeprofil anlegen"), erstelleFormular(), new HorizontalLayout(anlegen, leeren));
-    }
-
-    // Stellt die Felder ein: Pflichtfelder markieren, Hilfetexte, Datumsformat.
-    // Bekommt nichts. Gibt nichts zurück.
-    private void felderEinrichten() {
-        // Vaadin soll die Felder NICHT selbst prüfen und rot färben (z. B. beim Leeren nach dem Speichern).
-        // Alle Regeln prüft der GastService, Fehler zeigen wir nur als Meldung an.
-        vorname.setManualValidation(true);
-        nachname.setManualValidation(true);
-        geburtsdatum.setManualValidation(true);
-        email.setManualValidation(true);
-        telefon.setManualValidation(true);
-        strasse.setManualValidation(true);
-        hausnummer.setManualValidation(true);
-        plz.setManualValidation(true);
-        ort.setManualValidation(true);
-        land.setManualValidation(true);
-        praeferenzen.setManualValidation(true);
-
-        // Sternchen (*) an den Pflichtfeldern. Nur ein Hinweis, geprüft wird im Service.
-        vorname.setRequiredIndicatorVisible(true);
-        nachname.setRequiredIndicatorVisible(true);
-        geburtsdatum.setRequiredIndicatorVisible(true);
-        email.setRequiredIndicatorVisible(true);
-        strasse.setRequiredIndicatorVisible(true);
-        hausnummer.setRequiredIndicatorVisible(true);
-        plz.setRequiredIndicatorVisible(true);
-        ort.setRequiredIndicatorVisible(true);
-
-        // Deutsches Datumsformat (TT.MM.JJJJ) und kein Datum in der Zukunft auswählbar.
-        geburtsdatum.setLocale(Locale.GERMANY);
-        geburtsdatum.setMax(LocalDate.now());
-
-        // Hilfetexte in grau im Feld.
-        email.setPlaceholder("z. B. max@beispiel.de");
-        land.setPlaceholder("Deutschland");
-        praeferenzen.setPlaceholder("z. B. ruhiges Zimmer, hohe Etage");
-        praeferenzen.setMaxLength(255);
-    }
-
-    // Ordnet die Felder in einem Formular an, das sich der Bildschirmbreite anpasst.
-    // Bekommt nichts. Gibt zurück: das fertige Formular.
-    private FormLayout erstelleFormular() {
-        FormLayout formular = new FormLayout();
-        formular.add(vorname, nachname,
-                geburtsdatum, email,
-                telefon, land,
-                strasse, hausnummer,
-                plz, ort,
-                praeferenzen);
-        // Präferenzen bekommen die volle Breite (zwei Spalten).
-        formular.setColspan(praeferenzen, 2);
-        return formular;
+        add(new H2("Gästeprofil anlegen"), formular, new HorizontalLayout(anlegen, leeren));
     }
 
     // Wird beim Klick auf "Gästeprofil anlegen" aufgerufen (UC11 Schritte 2 bis 4).
     // Bekommt nichts. Gibt nichts zurück.
     private void speichern() {
-        GastDaten daten = leseEingaben();
+        GastDaten daten = formular.leseEingaben();
 
         // Schritt 2: Eingaben prüfen. Bei einem Fehler Meldung zeigen, Eingaben bleiben stehen (E2).
         try {
@@ -165,7 +91,7 @@ public class GastAnlegenView extends VerticalLayout {
             Gast neuerGast = gastService.gastprofilAnlegen(daten, trotzDublette);
             zeigeErfolg("Gästeprofil für " + neuerGast.getVollerName()
                     + " angelegt. Gastnummer: " + neuerGast.getGastNr());
-            felderLeeren();
+            formular.leeren();
         } catch (IllegalArgumentException fehler) {
             // Eingaben bleiben stehen, damit der Mitarbeiter sie korrigieren kann.
             zeigeFehler(fehler.getMessage());
@@ -179,40 +105,7 @@ public class GastAnlegenView extends VerticalLayout {
     private void bestehendenGastVerwenden(Gast gast) {
         zeigeErfolg("Bestehendes Gästeprofil wird verwendet: " + gast.getVollerName()
                 + ", Gastnummer " + gast.getGastNr());
-        felderLeeren();
-    }
-
-    // Liest alle Felder aus und packt sie in ein GastDaten-Objekt.
-    // Bekommt nichts. Gibt zurück: die Eingaben.
-    private GastDaten leseEingaben() {
-        return new GastDaten(
-                vorname.getValue(),
-                nachname.getValue(),
-                geburtsdatum.getValue(),   // null, wenn kein Datum gewählt wurde
-                email.getValue(),
-                telefon.getValue(),
-                strasse.getValue(),
-                hausnummer.getValue(),
-                plz.getValue(),
-                ort.getValue(),
-                land.getValue(),
-                praeferenzen.getValue());
-    }
-
-    // Leert alle Felder, z. B. nach dem erfolgreichen Anlegen.
-    // Bekommt nichts. Gibt nichts zurück.
-    private void felderLeeren() {
-        vorname.clear();
-        nachname.clear();
-        geburtsdatum.clear();
-        email.clear();
-        telefon.clear();
-        strasse.clear();
-        hausnummer.clear();
-        plz.clear();
-        ort.clear();
-        land.clear();
-        praeferenzen.clear();
+        formular.leeren();
     }
 
     // Grüne Meldung unten links, verschwindet nach 5 Sekunden.

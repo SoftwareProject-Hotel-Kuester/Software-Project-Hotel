@@ -1,0 +1,88 @@
+@startuml BearbeiteGastprofil
+hide footbox
+actor Mitarbeiter
+boundary GastBearbeitenView
+boundary EmailVergebenDialog
+control GastService
+entity "g: Gast" as Gast
+database "Datenbank" as DB
+
+== 1.-3. Gast suchen und auswählen ==
+Mitarbeiter -> GastBearbeitenView: öffneGastBearbeiten()
+activate GastBearbeitenView
+Mitarbeiter -> GastBearbeitenView: suchen(suchbegriff)
+GastBearbeitenView -> GastService: sucheGaeste(suchbegriff)
+activate GastService
+note right of GastService
+  nur Ziffern → Gastnummer
+  enthält @   → E-Mail
+  sonst       → Name
+end note
+GastService -> DB: findById / findByEmailIgnoreCase /\nfindByVornameOrNachnameContaining
+activate DB
+DB --> GastService: treffer
+deactivate DB
+GastService --> GastBearbeitenView: treffer
+Mitarbeiter <-- GastBearbeitenView: zeigeTrefferliste()
+
+Mitarbeiter -> GastBearbeitenView: gastAuswaehlen(gast)
+GastBearbeitenView -> GastService: ladeGast(gastNr)
+GastService -> DB: findById(gastNr)
+activate DB
+DB --> GastService: g
+deactivate DB
+GastService --> GastBearbeitenView: g
+
+== 4. Profil in der Maske anzeigen ==
+Mitarbeiter <-- GastBearbeitenView: zeigeMaske(g), bei Konto + E-Mail-Änderung Hinweis
+
+== 5. Daten ändern und prüfen ==
+Mitarbeiter -> GastBearbeitenView: speichern(geänderteDaten)
+GastBearbeitenView -> GastService: pruefeEingaben(daten)
+
+alt Eingabe ungültig
+    GastService --> GastBearbeitenView: Fehler
+    Mitarbeiter <-- GastBearbeitenView: zeigeFehler(), Eingaben bleiben stehen
+else Eingaben gültig
+    == 6. E-Mail prüfen ==
+    GastBearbeitenView -> GastService: findeAnderenBenutzerMitEmail(gastNr, email)
+    GastService -> DB: findByEmailIgnoreCase(email) (alle Benutzer)
+    activate DB
+    DB --> GastService: besitzer
+    deactivate DB
+    GastService --> GastBearbeitenView: anderer Benutzer oder leer
+
+    alt E-Mail gehört einem anderen Benutzer (E1)
+        GastBearbeitenView -> EmailVergebenDialog: <<create>> (andererBenutzer)
+        activate EmailVergebenDialog
+        Mitarbeiter <-- EmailVergebenDialog: zeigeAnderesProfil()
+        alt Mitarbeiter korrigiert die E-Mail
+            Mitarbeiter -> EmailVergebenDialog: emailKorrigieren()
+            Mitarbeiter <-- GastBearbeitenView: Eingaben bleiben stehen
+            note right of Mitarbeiter: weiter mit Schritt 5
+        else Mitarbeiter bricht ab
+            Mitarbeiter -> EmailVergebenDialog: aenderungVerwerfen()
+            EmailVergebenDialog --> GastBearbeitenView: verwerfen()
+            GastBearbeitenView -> GastService: ladeGast(gastNr)
+            GastService --> GastBearbeitenView: g (gespeicherter Stand)
+            Mitarbeiter <-- GastBearbeitenView: Änderungen verworfen
+        end
+        deactivate EmailVergebenDialog
+    else E-Mail ist frei
+        == 7. Speichern ==
+        GastBearbeitenView -> GastService: gastprofilBearbeiten(gastNr, daten)
+        GastService -> GastService: pruefeEingaben(daten), E-Mail erneut prüfen
+        GastService -> Gast: setVorname, setNachname, setGeburtsdatum,\nsetEmail, setTelefon, setPraeferenzen
+        GastService -> Gast: Adresse aktualisieren (vorhandene Adresse ändern)
+        GastService -> DB: save(g)
+        activate DB
+        DB --> GastService: g
+        deactivate DB
+        GastService --> GastBearbeitenView: g
+        Mitarbeiter <-- GastBearbeitenView: zeigeErfolg(), Suche zurücksetzen
+    end
+end
+
+deactivate GastService
+deactivate GastBearbeitenView
+@enduml

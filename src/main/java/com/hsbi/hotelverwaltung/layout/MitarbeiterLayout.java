@@ -3,6 +3,7 @@ package com.hsbi.hotelverwaltung.layout;
 import com.hsbi.hotelverwaltung.startseite.MitarbeiterStartView;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.gast.ui.GastAnlegenView;
+import com.hsbi.hotelverwaltung.gast.ui.GastBearbeitenView;
 import com.hsbi.hotelverwaltung.verfuegbarkeit.VerfuegbarkeitView;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerverwaltungView;
 import com.hsbi.hotelverwaltung.zimmerstatus.ui.ZimmerstatusView;
@@ -50,7 +51,8 @@ public class MitarbeiterLayout extends AppLayout {
                 eintrag("Belegungsübersicht", null)));
 
         menue.add(gruppe("Gäste",
-                eintrag("Gast anlegen", GastAnlegenView.class)));
+                eintrag("Gast anlegen", GastAnlegenView.class),
+                eintrag("Gast bearbeiten", GastBearbeitenView.class)));
 
         menue.add(gruppe("Zimmer & Reinigung",
                 eintrag("Zimmerstatus", ZimmerstatusView.class),
