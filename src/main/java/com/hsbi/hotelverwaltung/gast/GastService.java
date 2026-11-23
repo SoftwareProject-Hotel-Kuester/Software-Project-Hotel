@@ -1,6 +1,8 @@
 package com.hsbi.hotelverwaltung.gast;
 
 import com.hsbi.hotelverwaltung.domain.Adresse;
+import com.hsbi.hotelverwaltung.domain.Benutzer;
+import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.domain.Gast;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// Fachregeln rund um Gästeprofile. Gehört zu UC11 LegeGastprofilAn.
+// Fachregeln rund um Gästeprofile.
+// Gehört zu UC11 LegeGastprofilAn und UC12 BearbeiteGastprofil.
 // Ablauf: View → GastService → GastprofilRepository → Datenbank.
 // Die View spricht nie direkt mit der Datenbank.
 //
@@ -28,10 +31,16 @@ public class GastService {
     // Über das Repository lesen und speichern wir Gäste in der Datenbank.
     private final GastprofilRepository gastprofilRepository;
 
-    // Konstruktor: Spring übergibt das Repository automatisch, weil es hier als Parameter steht.
-    // Bekommt: das GastprofilRepository. Gibt nichts zurück.
-    public GastService(GastprofilRepository gastprofilRepository) {
+    // Über dieses Repository sehen wir ALLE Benutzer (Gäste und Mitarbeiter).
+    // Das brauchen wir für die E-Mail-Prüfung: Die E-Mail ist in der Tabelle "benutzer"
+    // eindeutig, sie darf also auch nicht einem Mitarbeiter gehören.
+    private final BenutzerRepository benutzerRepository;
+
+    // Konstruktor: Spring übergibt beide Repositories automatisch, weil sie hier als Parameter stehen.
+    // Bekommt: das GastprofilRepository und das BenutzerRepository. Gibt nichts zurück.
+    public GastService(GastprofilRepository gastprofilRepository, BenutzerRepository benutzerRepository) {
         this.gastprofilRepository = gastprofilRepository;
+        this.benutzerRepository = benutzerRepository;
     }
 
     // Legt ein neues Gästeprofil an und speichert es in der Datenbank (UC11).
@@ -53,7 +62,7 @@ public class GastService {
         // Die E-Mail ist zugleich der Anmeldename und in der Datenbank eindeutig.
         if (emailIstVergeben(daten.email())) {
             throw new IllegalArgumentException(
-                    "Es gibt bereits ein Gästeprofil mit der E-Mail-Adresse " + bereinigeEmail(daten.email()) + ".");
+                    "Die E-Mail-Adresse " + bereinigeEmail(daten.email()) + " ist bereits vergeben.");
         }
 
         // Schritt 3: Gleicher Name und Geburtsdatum → nur anlegen, wenn der Mitarbeiter es so will (E1).
@@ -148,11 +157,132 @@ public class GastService {
         return dubletten;
     }
 
-    // Prüft, ob es schon einen Gast mit dieser E-Mail-Adresse gibt.
+    // Prüft, ob es schon einen Benutzer (Gast ODER Mitarbeiter) mit dieser E-Mail-Adresse gibt.
     // Bekommt: die E-Mail-Adresse (Groß-/Kleinschreibung und Leerzeichen egal).
     // Gibt zurück: true, wenn die E-Mail schon vergeben ist, sonst false.
     public boolean emailIstVergeben(String email) {
-        return gastprofilRepository.findByEmailIgnoreCase(bereinigeEmail(email)).isPresent();
+        return benutzerRepository.findByEmailIgnoreCase(bereinigeEmail(email)).isPresent();
+    }
+
+    // ---------- UC12 BearbeiteGastprofil ----------
+
+    // Sucht Gäste für die Suchmaske (UC12, Schritt 3).
+    // Der Mitarbeiter tippt EINEN Suchbegriff. Daran erkennen wir, wonach gesucht wird:
+    //   - nur Ziffern, z. B. "7"            → Gastnummer
+    //   - enthält ein @, z. B. "anna@web.de" → E-Mail-Adresse
+    //   - sonst, z. B. "Anna Schmidt"        → Name (jedes Wort muss im Namen vorkommen)
+    // Bekommt: den Suchbegriff.
+    // Gibt zurück: Liste der passenden Gäste (leer, wenn es keine gibt).
+    // Wirft eine IllegalArgumentException, wenn der Suchbegriff leer ist.
+    public List<Gast> sucheGaeste(String suchbegriff) {
+        pruefePflichtfeld(suchbegriff, "Bitte einen Namen, eine E-Mail-Adresse oder eine Gastnummer eingeben.");
+        String begriff = suchbegriff.trim();
+        List<Gast> treffer = new ArrayList<>();
+
+        // Fall 1: nur Ziffern → Gastnummer. Höchstens 9 Ziffern, sonst passt die Zahl nicht in ein int.
+        if (begriff.matches("\\d{1,9}")) {
+            Optional<Gast> gast = gastprofilRepository.findById(Integer.parseInt(begriff));
+            if (gast.isPresent()) {
+                treffer.add(gast.get());
+            }
+            return treffer;
+        }
+
+        // Fall 2: enthält ein @ → E-Mail-Adresse.
+        if (begriff.contains("@")) {
+            Optional<Gast> gast = gastprofilRepository.findByEmailIgnoreCase(bereinigeEmail(begriff));
+            if (gast.isPresent()) {
+                treffer.add(gast.get());
+            }
+            return treffer;
+        }
+
+        // Fall 3: Name. "Anna Schmidt" wird in die Wörter "anna" und "schmidt" zerlegt.
+        // \\s+ heißt: an einem oder mehreren Leerzeichen trennen.
+        String[] woerter = begriff.toLowerCase().split("\\s+");
+
+        // Erst mit dem ersten Wort in der Datenbank suchen (Vor- oder Nachname enthält es) ...
+        List<Gast> kandidaten = gastprofilRepository
+                .findByVornameContainingIgnoreCaseOrNachnameContainingIgnoreCase(woerter[0], woerter[0]);
+
+        // ... dann nur die behalten, in deren vollem Namen ALLE Wörter vorkommen.
+        for (Gast gast : kandidaten) {
+            if (enthaeltAlleWoerter(gast.getVollerName().toLowerCase(), woerter)) {
+                treffer.add(gast);
+            }
+        }
+        return treffer;
+    }
+
+    // Lädt einen Gast über seine Gastnummer, z. B. um ihn in der Maske anzuzeigen (UC12, Schritt 4).
+    // Bekommt: die Gastnummer.
+    // Gibt zurück: den Gast mit seinem aktuellen Stand aus der Datenbank.
+    // Wirft eine IllegalArgumentException, wenn es keinen Gast mit dieser Nummer gibt.
+    public Gast ladeGast(int gastNr) {
+        Optional<Gast> gast = gastprofilRepository.findById(gastNr);
+        if (gast.isEmpty()) {
+            throw new IllegalArgumentException("Es gibt keinen Gast mit der Gastnummer " + gastNr + ".");
+        }
+        return gast.get();
+    }
+
+    // Prüft, ob die E-Mail-Adresse schon einem ANDEREN Benutzer gehört (UC12, Schritt 6).
+    // Die eigene E-Mail des Gastes zählt nicht: Wer seine E-Mail nicht ändert, darf trotzdem speichern.
+    // Bekommt: die Gastnummer des bearbeiteten Gastes und die eingegebene E-Mail-Adresse.
+    // Gibt zurück: den anderen Benutzer (Gast oder Mitarbeiter) oder ein leeres Optional, wenn die E-Mail frei ist.
+    public Optional<Benutzer> findeAnderenBenutzerMitEmail(int gastNr, String email) {
+        Optional<Benutzer> besitzer = benutzerRepository.findByEmailIgnoreCase(bereinigeEmail(email));
+
+        // Gehört die E-Mail dem bearbeiteten Gast selbst, ist das kein Problem.
+        if (besitzer.isPresent() && besitzer.get().getBenutzerId() == gastNr) {
+            return Optional.empty();
+        }
+        return besitzer;
+    }
+
+    // Speichert die Änderungen an einem Gästeprofil (UC12, Schritte 5 bis 7).
+    // Alle Felder sind änderbar, auch Name und Geburtsdatum (z. B. nach Heirat oder Tippfehler).
+    // Gastnummer und "hat Konto" bleiben unverändert.
+    // Bekommt: die Gastnummer und die geänderten Eingaben aus der Maske.
+    // Gibt zurück: den gespeicherten Gast.
+    // Wirft eine IllegalArgumentException, wenn eine Eingabe ungültig ist,
+    // die E-Mail einem anderen Benutzer gehört (E1) oder es die Gastnummer nicht gibt.
+    //
+    // @Transactional: Gast und Adresse werden zusammen gespeichert oder gar nicht.
+    @Transactional
+    public Gast gastprofilBearbeiten(int gastNr, GastDaten daten) {
+        // Schritt 5: dieselben Regeln wie beim Anlegen (UC11).
+        pruefeEingaben(daten);
+
+        // Den Gast mit seinem aktuellen Stand laden.
+        Gast gast = ladeGast(gastNr);
+
+        // Schritt 6: Gehört die E-Mail einem anderen Gast oder Mitarbeiter? → E1, nichts speichern.
+        if (findeAnderenBenutzerMitEmail(gastNr, daten.email()).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Die E-Mail-Adresse " + bereinigeEmail(daten.email()) + " gehört bereits zu einem anderen Benutzer.");
+        }
+
+        // Schritt 7: Änderungen übernehmen. Stammdaten (Name, Geburtsdatum) ...
+        gast.setVorname(daten.vorname().trim());
+        gast.setNachname(daten.nachname().trim());
+        gast.setGeburtsdatum(daten.geburtsdatum());
+
+        // ... und Kontaktdaten. Leere optionale Felder werden zu null (wie beim Anlegen).
+        gast.setEmail(bereinigeEmail(daten.email()));
+        gast.setTelefon(leerWirdNull(daten.telefon()));
+        gast.setPraeferenzen(leerWirdNull(daten.praeferenzen()));
+
+        // Anschrift: Die vorhandene Adresse wird geändert, nicht ersetzt.
+        // So bleibt keine alte Adresse ohne Besitzer in der Tabelle "adresse" zurück.
+        if (gast.getAdresse() == null) {
+            gast.setAdresse(erstelleAdresse(daten));
+        } else {
+            aktualisiereAdresse(gast.getAdresse(), daten);
+        }
+
+        // Speichern und den aktuellen Stand zurückgeben.
+        return gastprofilRepository.save(gast);
     }
 
     // ---------- Hilfsmethoden (nur innerhalb dieser Klasse) ----------
@@ -204,6 +334,33 @@ public class GastService {
                 daten.plz().trim(),
                 daten.ort().trim(),
                 land);
+    }
+
+    // Überschreibt die Felder einer vorhandenen Adresse mit den neuen Eingaben (UC12).
+    // Ist kein Land angegeben, wird "Deutschland" eingetragen (wie in erstelleAdresse).
+    // Bekommt: die vorhandene Adresse und die Eingaben aus der Maske. Gibt nichts zurück.
+    private void aktualisiereAdresse(Adresse adresse, GastDaten daten) {
+        String land = leerWirdNull(daten.land());
+        if (land == null) {
+            land = STANDARD_LAND;
+        }
+        adresse.setStrasse(daten.strasse().trim());
+        adresse.setHausnummer(daten.hausnummer().trim());
+        adresse.setPlz(daten.plz().trim());
+        adresse.setOrt(daten.ort().trim());
+        adresse.setLand(land);
+    }
+
+    // Prüft, ob in einem Namen alle Suchwörter vorkommen (UC12, Gastsuche).
+    // Beispiel: "anna schmidt" enthält "anna" und "schm" → true.
+    // Bekommt: den vollen Namen (klein geschrieben) und die Suchwörter. Gibt zurück: true oder false.
+    private boolean enthaeltAlleWoerter(String name, String[] woerter) {
+        for (String wort : woerter) {
+            if (!name.contains(wort)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Prüft, ob ein Gast schon in der Liste steht (Vergleich über die Gastnummer).
