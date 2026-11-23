@@ -24,7 +24,7 @@ import java.util.List;
 public class VerfuegbarkeitService {
 
     /** Diese Buchungen belegen ein Zimmer. Stornierte und ausgecheckte Buchungen zählen nicht. */
-    private static final List<Buchungsstatus> BELEGENDE_STATUS =
+    public static final List<Buchungsstatus> BELEGENDE_STATUS =
             List.of(Buchungsstatus.GEBUCHT, Buchungsstatus.EINGECHECKT);
 
     private final ZimmerRepository zimmerRepository;
