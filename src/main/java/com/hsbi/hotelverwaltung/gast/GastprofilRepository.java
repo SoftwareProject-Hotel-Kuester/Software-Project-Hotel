@@ -26,4 +26,11 @@ public interface GastprofilRepository extends JpaRepository<Gast, Integer> {
     // Gibt zurück: Liste der passenden Gäste (leer, wenn es keine gibt).
     List<Gast> findByVornameIgnoreCaseAndNachnameIgnoreCaseAndGeburtsdatum(
             String vorname, String nachname, LocalDate geburtsdatum);
+
+    // Sucht Gäste, deren Vor- ODER Nachname den Suchtext enthält (UC12, Gastsuche).
+    // "Containing" = enthält irgendwo, z. B. "schm" findet "Schmidt".
+    // Bekommt: den Suchtext zweimal (einmal für Vorname, einmal für Nachname).
+    // Gibt zurück: Liste der passenden Gäste (leer, wenn es keine gibt).
+    List<Gast> findByVornameContainingIgnoreCaseOrNachnameContainingIgnoreCase(
+            String vorname, String nachname);
 }

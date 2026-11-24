@@ -4,6 +4,7 @@ import com.hsbi.hotelverwaltung.belegung.BelegungsuebersichtView;
 import com.hsbi.hotelverwaltung.domain.Benutzer;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.gast.ui.GastAnlegenView;
+import com.hsbi.hotelverwaltung.gast.ui.GastBearbeitenView;
 import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 import com.hsbi.hotelverwaltung.verfuegbarkeit.VerfuegbarkeitView;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerverwaltungView;
@@ -55,6 +56,7 @@ public class MitarbeiterStartView extends VerticalLayout {
                         BelegungsuebersichtView.class),
                 new Kachel("Neue Buchung", "Eine Buchung für einen Gast anlegen.", null),
                 new Kachel("Gast anlegen", "Ein Gästeprofil neu erfassen.", GastAnlegenView.class),
+                new Kachel("Gast bearbeiten", "Ein Gästeprofil suchen und ändern.", GastBearbeitenView.class),
                 new Kachel("Zimmerstatus", "Belegung, Reinigung und Sperren der Zimmer.",
                         ZimmerstatusView.class));
 
