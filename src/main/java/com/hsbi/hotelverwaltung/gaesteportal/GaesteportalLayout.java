@@ -2,6 +2,7 @@ package com.hsbi.hotelverwaltung.gaesteportal;
 
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.layout.Kopfzeile;
+import com.hsbi.hotelverwaltung.zimmerstatus.ui.ZimmerreinigungView;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Anchor;
@@ -37,9 +38,10 @@ public class GaesteportalLayout extends AppLayout {
         RouterLink meineBuchungen = new RouterLink("Meine Buchungen", MeineBuchungenView.class);
         Anchor profil = new Anchor(ROUTE_PROFIL, "Profil");
         RouterLink startseite = new RouterLink("Startseite", GaesteStartView.class);
+        RouterLink zimmerreinigung = new RouterLink("Zimmerreinigung", ZimmerreinigungView.class); // UC07
 
         // Kopfzeile oben (mit Anmelden/Abmelden), Menü in der linken Seitenleiste.
         addToNavbar(new DrawerToggle(), new Kopfzeile("Gästeportal", authContext, benutzerRepository));
-        addToDrawer(new VerticalLayout(startseite, zimmersuche, meineBuchungen, profil));
+        addToDrawer(new VerticalLayout(startseite, zimmersuche, meineBuchungen, zimmerreinigung, profil));
     }
 }
