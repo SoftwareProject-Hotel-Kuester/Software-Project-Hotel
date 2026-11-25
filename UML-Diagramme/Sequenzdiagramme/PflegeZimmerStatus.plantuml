@@ -1,0 +1,73 @@
+@startuml PflegeZimmerStatus
+hide footbox
+actor Gast
+boundary ZimmerreinigungView
+control GastZimmerService
+database "Datenbank" as DB
+entity "z: Zimmer" as Zimmer
+entity "d: Defektmeldung" as Defektmeldung
+
+== Aufenthalt anzeigen ==
+Gast -> ZimmerreinigungView: öffnet "Zimmerreinigung"
+activate ZimmerreinigungView
+ZimmerreinigungView -> GastZimmerService: laufendeAufenthalte(gast, heute)
+activate GastZimmerService
+GastZimmerService -> DB: findByGast(gast)
+DB --> GastZimmerService: liste(b)
+GastZimmerService --> ZimmerreinigungView: laufende Aufenthalte
+deactivate GastZimmerService
+ZimmerreinigungView --> Gast: Zimmer mit Reinigungsstatus\n(Standard: "zu reinigen")
+deactivate ZimmerreinigungView
+
+note over Gast
+    Standardablauf: Der Gast wählt nichts,
+    es folgt UC25 SteuereTäglicheReinigung.
+end note
+
+== E1: Gast wählt "nicht reinigen" (12 bis 11 Uhr) ==
+Gast -> ZimmerreinigungView: wählt "Nicht reinigen"
+activate ZimmerreinigungView
+ZimmerreinigungView -> GastZimmerService: reinigungWaehlen(gast, buchungsNr, true, jetzt)
+activate GastZimmerService
+GastZimmerService -> DB: findById(buchungsNr)
+DB --> GastZimmerService: b
+GastZimmerService -> GastZimmerService: prüfe: eigene Buchung, Aufenthalt läuft,\nnicht 11-12 Uhr, Zimmer nicht gesperrt
+
+alt Prüfung fehlgeschlagen
+    GastZimmerService --> ZimmerreinigungView: ZimmerstatusException
+    ZimmerreinigungView --> Gast: Fehlermeldung
+else ok
+    GastZimmerService -> Zimmer: reinigungsstatusAendern(NICHT_REINIGEN)
+    GastZimmerService -> DB: speichere(z)
+    GastZimmerService --> ZimmerreinigungView: Aufenthalt
+    ZimmerreinigungView --> Gast: zeigt Status "nicht reinigen"
+end
+deactivate GastZimmerService
+deactivate ZimmerreinigungView
+
+note over Gast
+    Es folgt UC25: Das Zimmer wird ausgelassen
+    und um 12 Uhr wieder auf "zu reinigen" gesetzt.
+end note
+
+== E2: Gast meldet einen Defekt ==
+Gast -> ZimmerreinigungView: "Defekt melden" mit Vermerk
+activate ZimmerreinigungView
+ZimmerreinigungView -> GastZimmerService: defektMelden(gast, buchungsNr, vermerk, heute)
+activate GastZimmerService
+GastZimmerService -> DB: findById(buchungsNr)
+DB --> GastZimmerService: b
+GastZimmerService -> Defektmeldung: <<create>> (z, vermerk, heute, GAST)
+GastZimmerService -> DB: speichere(d)
+GastZimmerService -> Zimmer: sperren(vermerk)
+GastZimmerService -> DB: speichere(z)
+GastZimmerService --> ZimmerreinigungView: Aufenthalt
+deactivate GastZimmerService
+ZimmerreinigungView --> Gast: "Ihr Zimmer ist gesperrt,\ndie Rezeption meldet sich"
+deactivate ZimmerreinigungView
+
+note over Gast
+    Es folgt UC27 HebeZimmersperreAuf
+    durch einen Mitarbeiter.
+end note
+@enduml

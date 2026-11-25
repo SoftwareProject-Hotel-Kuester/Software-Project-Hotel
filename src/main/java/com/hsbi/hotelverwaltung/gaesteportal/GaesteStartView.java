@@ -3,6 +3,7 @@ package com.hsbi.hotelverwaltung.gaesteportal;
 import com.hsbi.hotelverwaltung.domain.Benutzer;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.startseite.Kachel;
+import com.hsbi.hotelverwaltung.zimmerstatus.ui.ZimmerreinigungView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
@@ -39,7 +40,7 @@ public class GaesteStartView extends VerticalLayout {
         raster.add(
                 new Kachel("Zimmer suchen & buchen", "Freie Zimmer finden und buchen.", null),
                 new Kachel("Meine Buchungen", "Ihre Buchungen ansehen.", MeineBuchungenView.class),
-                new Kachel("Zimmerreinigung", "Die Reinigung für Ihren Aufenthalt festlegen.", null),
+                new Kachel("Zimmerreinigung", "Die Reinigung für Ihren Aufenthalt festlegen.", ZimmerreinigungView.class),
                 new Kachel("Mein Profil", "Name, Adresse, Telefon und Passwort bearbeiten.", null));
 
         add(new H2("Willkommen zurück, " + vorname + "!"),
