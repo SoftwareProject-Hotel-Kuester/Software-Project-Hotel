@@ -67,6 +67,25 @@ public class MailService {
         senden(an, "Ihr Konto im Hotel Sparrenhof", text);
     }
 
+    // UC20: Bestätigung, nachdem ein Gast seine Buchung im Gästeportal storniert hat.
+    // Zimmer und Zeitraum kommen schon als fertiger Text, z. B. "15.06.2027 bis 18.06.2027".
+    public void sendeStornobestaetigung(String an, String vorname, int buchungsNr, int zimmerNr, String zeitraum) {
+        String text = """
+                Guten Tag %s,
+
+                Ihre Buchung Nr. %d wurde storniert.
+
+                Zimmer: %d
+                Zeitraum: %s
+
+                Wenn Sie diese Stornierung nicht selbst vorgenommen haben,
+                melden Sie sich bitte bei uns.
+
+                Ihr Hotel Sparrenhof
+                """.formatted(vorname, buchungsNr, zimmerNr, zeitraum);
+        senden(an, "Ihre Buchung Nr. " + buchungsNr + " wurde storniert", text);
+    }
+
     // Baut die Mail zusammen und schickt sie ab. Bei Problemen mit dem Mailserver
     // wirft Spring eine MailException, die der Aufrufer behandeln muss.
     private void senden(String an, String betreff, String text) {

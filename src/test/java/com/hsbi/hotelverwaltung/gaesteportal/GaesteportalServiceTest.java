@@ -7,6 +7,7 @@ import com.hsbi.hotelverwaltung.domain.Buchungsstatus;
 import com.hsbi.hotelverwaltung.domain.Gast;
 import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.Zimmerklasse;
+import com.hsbi.hotelverwaltung.mail.MailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,21 +22,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-// Tests für GaesteportalService. Gehört zu UC18 ZeigeEigeneBuchungen.
-// Prüft: Sortierung der Buchungen, Zugriff nur auf eigene Buchungen.
+// Tests für GaesteportalService. Gehört zu UC18 ZeigeEigeneBuchungen und UC20 StorniereEigeneBuchung.
+// Prüft: Sortierung der Buchungen, Zugriff nur auf eigene Buchungen, Stornieren.
 //
 // Diese Tests laufen ohne Datenbank und ohne Docker:
-// Statt des echten BuchungRepository nutzen wir ein "Mock" (Attrappe) von Mockito.
+// Statt des echten BuchungRepository und MailService nutzen wir "Mocks" (Attrappen) von Mockito.
 // mock(...) erzeugt die Attrappe, when(...).thenReturn(...) legt fest, was sie zurückgibt.
+// verify(...) prüft danach, ob eine Methode der Attrappe aufgerufen wurde.
 class GaesteportalServiceTest {
 
     // Alle Tests tun so, als wäre heute der 01.06.2027.
     private static final LocalDate HEUTE = LocalDate.of(2027, 6, 1);
 
     private BuchungRepository buchungRepository;
+    private MailService mailService;
     private GaesteportalService service;
     private Gast max;
     private Gast erika;
@@ -45,7 +52,8 @@ class GaesteportalServiceTest {
     @BeforeEach
     void setUp() {
         buchungRepository = mock(BuchungRepository.class);
-        service = new GaesteportalService(buchungRepository);
+        mailService = mock(MailService.class);
+        service = new GaesteportalService(buchungRepository, mailService);
 
         max = testGast(1, "max@example.com");
         erika = testGast(2, "erika@example.com");
@@ -122,6 +130,64 @@ class GaesteportalServiceTest {
         assertTrue(anstehend.kannVomGastGeaendertWerden(HEUTE));
         assertFalse(anreiseHeute.kannVomGastGeaendertWerden(HEUTE));
         assertFalse(storniert.kannVomGastGeaendertWerden(HEUTE));
+    }
+
+    // UC20: Eigene, anstehende Buchung wird storniert, gespeichert und per Mail bestätigt.
+    @Test
+    void eigeneBuchungWirdStorniert() {
+        Buchung buchung = testBuchung(7, max, HEUTE.plusDays(5), HEUTE.plusDays(7));
+        when(buchungRepository.findById(7)).thenReturn(Optional.of(buchung));
+
+        service.eigeneBuchungStornieren(max, 7, HEUTE);
+
+        assertEquals(Buchungsstatus.STORNIERT, buchung.getStatus());
+        verify(buchungRepository).save(buchung);
+        verify(mailService).sendeStornobestaetigung("max@example.com", "Test", 7, 202,
+                "06.06.2027 bis 08.06.2027");
+    }
+
+    // UC20: Eine fremde Buchung darf nicht storniert werden. Es wird nichts gespeichert und keine Mail verschickt.
+    @Test
+    void fremdeBuchungKannNichtStorniertWerden() {
+        Buchung vonErika = testBuchung(7, erika, HEUTE.plusDays(5), HEUTE.plusDays(7));
+        when(buchungRepository.findById(7)).thenReturn(Optional.of(vonErika));
+
+        assertThrows(BuchungNichtGefundenException.class, () -> service.eigeneBuchungStornieren(max, 7, HEUTE));
+        assertEquals(Buchungsstatus.GEBUCHT, vonErika.getStatus());
+        verify(buchungRepository, never()).save(any());
+        verifyNoInteractions(mailService);
+    }
+
+    // UC20 Vorbedingung: Ist die Anreise heute (oder schon vorbei), geht online stornieren nicht mehr.
+    @Test
+    void buchungMitAnreiseHeuteKannNichtStorniertWerden() {
+        Buchung anreiseHeute = testBuchung(7, max, HEUTE, HEUTE.plusDays(2));
+        when(buchungRepository.findById(7)).thenReturn(Optional.of(anreiseHeute));
+
+        assertThrows(IllegalStateException.class, () -> service.eigeneBuchungStornieren(max, 7, HEUTE));
+        assertEquals(Buchungsstatus.GEBUCHT, anreiseHeute.getStatus());
+        verifyNoInteractions(mailService);
+    }
+
+    // UC20 E1: Eine eingecheckte Buchung kann der Gast nicht selbst stornieren.
+    @Test
+    void eingecheckteBuchungKannNichtStorniertWerden() {
+        Buchung eingecheckt = testBuchung(7, max, HEUTE.minusDays(1), HEUTE.plusDays(2));
+        eingecheckt.setStatus(Buchungsstatus.EINGECHECKT);
+        when(buchungRepository.findById(7)).thenReturn(Optional.of(eingecheckt));
+
+        assertThrows(IllegalStateException.class, () -> service.eigeneBuchungStornieren(max, 7, HEUTE));
+        assertEquals(Buchungsstatus.EINGECHECKT, eingecheckt.getStatus());
+    }
+
+    // Die Methode stornieren() in Buchung: Eine schon stornierte Buchung kann man nicht noch mal stornieren.
+    @Test
+    void stornierteBuchungKannNichtNochmalStorniertWerden() {
+        Buchung buchung = testBuchung(7, max, HEUTE.plusDays(5), HEUTE.plusDays(7));
+        buchung.stornieren();
+
+        assertEquals(Buchungsstatus.STORNIERT, buchung.getStatus());
+        assertThrows(IllegalStateException.class, () -> buchung.stornieren());
     }
 
     // Hilfsmethode: Gast mit fester Nummer erzeugen.

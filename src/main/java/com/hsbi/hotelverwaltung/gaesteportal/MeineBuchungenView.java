@@ -12,6 +12,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.mail.MailException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.Optional;
 
 // Seite "Meine Buchungen" (UC18 ZeigeEigeneBuchungen).
 // Der Gast sieht seine Buchungen mit Zeitraum, Zimmer, Preis und Status.
-// Ein Klick auf eine Zeile öffnet die Details.
+// Ein Klick auf eine Zeile öffnet die Details. Dort kann er stornieren (UC20).
 //
 // @Route: Die Seite ist unter http://localhost:8080/meine-buchungen erreichbar.
 //   layout = GaesteportalLayout.class: Die Seite erscheint im Rahmen des Gästeportals
@@ -90,15 +91,37 @@ public class MeineBuchungenView extends VerticalLayout {
 
         // UC18 Schritt 4: Klick auf eine Zeile öffnet die Details.
         // Die Buchung wird dafür über den Service neu geladen. Der prüft, ob sie dem Gast gehört.
+        // Dem Dialog geben wir mit, was beim Stornieren passieren soll: die Methode storniere(...).
         tabelle.addItemClickListener(klick -> {
             try {
                 Buchung buchung = gaesteportalService.eigeneBuchung(gast, klick.getItem().getBuchungsNr());
-                new BuchungDetailsDialog(buchung).open();
+                new BuchungDetailsDialog(buchung, () -> storniere(gast, buchung, tabelle)).open();
             } catch (BuchungNichtGefundenException fehler) {
                 Notification.show(fehler.getMessage());
             }
         });
 
         add(new Paragraph("Klicke auf eine Buchung, um die Details zu sehen."), tabelle);
+    }
+
+    // UC20 Schritt 4 bis 6: Buchung stornieren, Meldung zeigen, Tabelle neu laden.
+    // Wird aufgerufen, wenn der Gast im StornierenDialog auf "Ja, stornieren" klickt.
+    // Bekommt: den Gast, die Buchung und die Tabelle, die danach aktualisiert wird.
+    private void storniere(Gast gast, Buchung buchung, Grid<Buchung> tabelle) {
+        try {
+            gaesteportalService.eigeneBuchungStornieren(gast, buchung.getBuchungsNr(), LocalDate.now());
+            Notification.show("Buchung Nr. " + buchung.getBuchungsNr()
+                    + " wurde storniert. Du bekommst eine Bestätigung per E-Mail.");
+        } catch (BuchungNichtGefundenException | IllegalStateException fehler) {
+            // Buchung gehört nicht dem Gast oder darf nicht mehr storniert werden.
+            Notification.show(fehler.getMessage());
+        } catch (MailException fehler) {
+            // Die Buchung ist schon storniert, nur die E-Mail ging nicht raus.
+            Notification.show("Buchung Nr. " + buchung.getBuchungsNr()
+                    + " wurde storniert. Die Bestätigungs-E-Mail konnte aber nicht verschickt werden.");
+        }
+
+        // Tabelle neu laden, damit der neue Status "storniert" sofort zu sehen ist.
+        tabelle.setItems(gaesteportalService.eigeneBuchungen(gast, LocalDate.now()));
     }
 }
