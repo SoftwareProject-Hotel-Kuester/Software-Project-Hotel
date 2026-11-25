@@ -2,6 +2,7 @@ package com.hsbi.hotelverwaltung.zimmerstatus.ui;
 
 import com.hsbi.hotelverwaltung.domain.Reinigungsstatus;
 import com.hsbi.hotelverwaltung.domain.Zimmerstatus;
+import com.hsbi.hotelverwaltung.zimmerstatus.ReinigungService;
 import com.hsbi.hotelverwaltung.zimmerstatus.ZimmerInfo;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -24,7 +25,7 @@ final class Anzeige {
     private Anzeige() {
     }
 
-    /** Kennzeichen für die Belegung: frei, belegt, gesperrt. */
+    /** Kennzeichen für die Belegung: frei, belegt oder gesperrt. */
     static Span status(Zimmerstatus status) {
         return switch (status) {
             case BELEGT -> kennzeichen(status.getBezeichnung(), "#1e4fd8", "#e3ebff");
@@ -42,7 +43,7 @@ final class Anzeige {
         };
     }
 
-    /** Kasten mit Sperrgrund und Herkunft, wird beim Öffnen eines gesperrten Zimmers gezeigt (UC26). */
+    /** Sperrgrund und Herkunft, wird beim Öffnen eines gesperrten Zimmers gezeigt (UC26). */
     static Div sperrgrund(ZimmerInfo zimmer) {
         Span titel = new Span("Sperrgrund");
         titel.getStyle().set("font-weight", "600");
@@ -68,6 +69,19 @@ final class Anzeige {
                 .set("width", "100%")
                 .set("box-sizing", "border-box");
         return kasten;
+    }
+
+    /** Informationsmeldung an den Mitarbeiter über die letzte tägliche Reinigung (UC25, Schritt 6). */
+    static String reinigungstext(ReinigungService.Reinigungsergebnis ergebnis) {
+        String datum = ergebnis.datum().format(DATUM);
+        String versand = ergebnis.versendet() ? "" : " Achtung: Die Liste konnte nicht an das Reinigungsteam geschickt werden.";
+        if (!ergebnis.abgeschlossen()) {
+            return "Reinigung " + datum + " läuft: " + ergebnis.anzahlAufListe()
+                    + " Zimmer auf der Liste, Status werden um 12 Uhr angepasst." + versand;
+        }
+        return "Reinigung " + datum + " abgeschlossen (" + ergebnis.abgeschlossenUm().format(ZEITPUNKT) + "): "
+                + ergebnis.anzahlGereinigt() + " Zimmer gereinigt, "
+                + ergebnis.anzahlNeuZuReinigen() + " Zimmer wieder „zu reinigen“." + versand;
     }
 
     /** Grüne Erfolgsmeldung unten links. */

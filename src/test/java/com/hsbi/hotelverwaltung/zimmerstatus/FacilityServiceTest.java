@@ -26,8 +26,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * UC24, UC26 und UC27 im FacilityService. Die Repositories sind Attrappen
- * (Mockito), es braucht also keine Datenbank.
+ * UC24, UC26 und UC27 im FacilityService. Die Repositories sind Attrappen,
+ * es braucht also keine Datenbank.
  */
 class FacilityServiceTest {
 

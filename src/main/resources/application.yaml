@@ -20,3 +20,6 @@ hotel:
   # Basisadresse der App für Links in E-Mails (z. B. Bestätigungslink).
   # Im Betrieb steht hier die echte Adresse.
   basis-url: http://localhost:8080
+  reinigung:
+    # Empfänger der täglichen Reinigungsliste um 11 Uhr (UC25)
+    empfaenger: reinigung@sparrenhof.test
