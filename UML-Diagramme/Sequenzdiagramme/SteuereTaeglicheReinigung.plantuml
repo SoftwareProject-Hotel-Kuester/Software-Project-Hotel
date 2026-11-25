@@ -1,32 +1,43 @@
 @startuml SteuereTaeglicheReinigung
 hide footbox
-participant "Zeitgeber\n(täglich 11 Uhr)" as Zeitgeber
+participant "Zeitgeber\n(täglich 11 und 12 Uhr)" as Zeitgeber
 control ReinigungService
 database "Datenbank" as DB
 entity "l: Reinigungsliste" as Liste
 entity "z: Zimmer" as Zimmer
 actor Reinigungsteam
+boundary ZimmerstatusView
 actor Mitarbeiter
 
 == 1. Reinigungsliste erstellen (11:00 Uhr) ==
-Zeitgeber -> ReinigungService: starteTäglicheReinigung()
+Zeitgeber -> ReinigungService: starteTaeglicheReinigung()
 activate ReinigungService
 
-ReinigungService -> DB: ladeZimmerNachStatus(ZU_REINIGEN)
+' Bleibegäste: gestern gereinigte, belegte Zimmer sind heute wieder dran (UC07: Standard "zu reinigen")
+ReinigungService -> DB: findByZimmerstatusAndReinigungsstatus(BELEGT, GEREINIGT)
+activate DB
+DB --> ReinigungService: liste(b)
+deactivate DB
+loop für jedes Zimmer z in liste(b)
+    ReinigungService -> Zimmer: reinigungsstatusAendern(ZU_REINIGEN)
+end
+
+ReinigungService -> DB: findByReinigungsstatusAndZimmerstatusNot(ZU_REINIGEN, GESPERRT)
 activate DB
 DB --> ReinigungService: liste(z)
 deactivate DB
 
 ReinigungService -> Liste: <<create>> (heutigesDatum)
-activate Liste
 
 loop für jedes Zimmer z in liste(z)
     ReinigungService -> Liste: zimmerHinzufuegen(z)
 end
 
 == 2. Liste an das Reinigungsteam schicken ==
-ReinigungService -> Liste: versenden()
-Liste -> Reinigungsteam: reinigungslisteZustellen(l)
+ReinigungService ->> Reinigungsteam: E-Mail "Reinigungsliste" (Zimmer nach Etage)
+ReinigungService -> Liste: alsVersendetMarkieren()
+ReinigungService -> DB: speichere(l)
+deactivate ReinigungService
 
 note over Reinigungsteam
     Das Reinigungsteam reinigt die Zimmer
@@ -36,39 +47,43 @@ end note
 
 ... Reinigungszeit bis 12 Uhr ...
 
-== 3. Zimmerstatus aktualisieren ==
+== 3. Zimmerstatus aktualisieren (12:00 Uhr) ==
+Zeitgeber -> ReinigungService: schliesseTaeglicheReinigungAb()
+activate ReinigungService
+ReinigungService -> DB: findByDatum(heute)
+activate DB
+DB --> ReinigungService: l
+deactivate DB
+
 ' Reihenfolge ist wichtig: Erst die Zimmer der Liste auf GEREINIGT setzen,
 ' danach die Zimmer mit NICHT_REINIGEN auf ZU_REINIGEN. Sonst würden sie
 ' noch am selben Tag auf GEREINIGT springen.
 ReinigungService -> Liste: statusAktualisieren()
-
-loop für jedes Zimmer z der Liste
+activate Liste
+loop für jedes Zimmer z der Liste (nicht gesperrt, noch "zu reinigen")
     Liste -> Zimmer: reinigungsstatusAendern(GEREINIGT)
-    activate Zimmer
-    Zimmer --> Liste: ok
-    deactivate Zimmer
 end
-Liste --> ReinigungService: ok
+Liste --> ReinigungService: anzahlGereinigt
 deactivate Liste
 
-ReinigungService -> DB: ladeZimmerNachStatus(NICHT_REINIGEN)
+ReinigungService -> DB: findByReinigungsstatusAndZimmerstatusNot(NICHT_REINIGEN, GESPERRT)
 activate DB
 DB --> ReinigungService: liste(z2)
 deactivate DB
 
 loop für jedes Zimmer z in liste(z2)
     ReinigungService -> Zimmer: reinigungsstatusAendern(ZU_REINIGEN)
-    activate Zimmer
-    Zimmer --> ReinigungService: ok
-    deactivate Zimmer
 end
 
-ReinigungService -> DB: speichereZimmer(liste(z) und liste(z2))
-activate DB
-DB --> ReinigungService: ok
-deactivate DB
+ReinigungService -> Liste: abschliessen(anzahlNeuZuReinigen, jetzt)
+ReinigungService -> DB: speichere(liste(z), liste(z2), l)
+deactivate ReinigungService
 
 == 4. Mitarbeiter informieren ==
-ReinigungService --> Mitarbeiter: meldeReinigungAbgeschlossen(anzahlGereinigt, anzahlNeuZuReinigen)
-deactivate ReinigungService
+Mitarbeiter -> ZimmerstatusView: öffnet "Zimmerstatus"
+activate ZimmerstatusView
+ZimmerstatusView -> ReinigungService: ladeLetzteReinigung()
+ReinigungService --> ZimmerstatusView: Reinigungsergebnis
+ZimmerstatusView --> Mitarbeiter: "Reinigung abgeschlossen: x gereinigt, y wieder zu reinigen"
+deactivate ZimmerstatusView
 @enduml

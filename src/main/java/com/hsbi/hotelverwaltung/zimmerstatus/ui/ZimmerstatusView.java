@@ -1,8 +1,10 @@
 package com.hsbi.hotelverwaltung.zimmerstatus.ui;
 
 import com.hsbi.hotelverwaltung.zimmerstatus.FacilityService;
+import com.hsbi.hotelverwaltung.zimmerstatus.ReinigungService;
 import com.hsbi.hotelverwaltung.zimmerstatus.Statusfilter;
 import com.hsbi.hotelverwaltung.zimmerstatus.ZimmerInfo;
+import com.hsbi.hotelverwaltung.zimmerstatus.ZimmerstatusException;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -28,16 +30,19 @@ import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 public class ZimmerstatusView extends VerticalLayout {
 
     private final FacilityService facilityService;
+    private final ReinigungService reinigungService;
 
     private final Select<Statusfilter> statusfilter = new Select<>();
     private final Span kennzahlen = new Span();
+    private final Span reinigungHinweis = new Span();
     private final Grid<ZimmerInfo> tabelle = new Grid<>();
 
-    public ZimmerstatusView(FacilityService facilityService) {
+    public ZimmerstatusView(FacilityService facilityService, ReinigungService reinigungService) {
         this.facilityService = facilityService;
+        this.reinigungService = reinigungService;
 
         kennzahlen.getStyle().set("color", Anzeige.GRAU);
-        add(new H2("Zimmerstatus"), erstelleWerkzeugleiste(), kennzahlen, erstelleTabelle());
+        add(new H2("Zimmerstatus"), erstelleWerkzeugleiste(), reinigungHinweis, kennzahlen, erstelleTabelle());
         aktualisieren();
     }
 
@@ -50,10 +55,12 @@ public class ZimmerstatusView extends VerticalLayout {
 
         Button sperreAufheben = new Button("Sperre aufheben",
                 event -> new SperreAufhebenDialog(facilityService, this::aktualisieren).open());
+        // UC25 sofort ausführen, statt auf 11 und 12 Uhr zu warten (zum Ausprobieren)
+        Button reinigungJetzt = new Button("Reinigung jetzt ausführen", event -> reinigungAusfuehren());
         Button neuLaden = new Button("Aktualisieren", event -> aktualisieren());
         neuLaden.addThemeVariants(ButtonVariant.TERTIARY);
 
-        HorizontalLayout leiste = new HorizontalLayout(statusfilter, sperreAufheben, neuLaden);
+        HorizontalLayout leiste = new HorizontalLayout(statusfilter, sperreAufheben, reinigungJetzt, neuLaden);
         leiste.setAlignItems(FlexComponent.Alignment.BASELINE);
         leiste.getStyle().set("flex-wrap", "wrap");
         return leiste;
@@ -78,8 +85,23 @@ public class ZimmerstatusView extends VerticalLayout {
         return tabelle;
     }
 
-    /** Lädt Tabelle und Kennzahlen neu. */
+    private void reinigungAusfuehren() {
+        try {
+            ReinigungService.Reinigungsergebnis ergebnis = reinigungService.jetztAusfuehren();
+            Anzeige.erfolg("Reinigung abgeschlossen: " + ergebnis.anzahlGereinigt() + " gereinigt, "
+                    + ergebnis.anzahlNeuZuReinigen() + " wieder „zu reinigen“.");
+        } catch (ZimmerstatusException e) {
+            Anzeige.fehler(e.getMessage());
+        }
+        aktualisieren();
+    }
+
+    /** Lädt Tabelle, Kennzahlen und den Hinweis zur letzten Reinigung neu. */
     private void aktualisieren() {
+        reinigungHinweis.setText(reinigungService.ladeLetzteReinigung()
+                .map(Anzeige::reinigungstext)
+                .orElse("Bisher wurde noch keine Reinigung durchgeführt."));
+
         tabelle.setItems(facilityService.ladeAlleZimmer(statusfilter.getValue()));
 
         FacilityService.Kennzahlen zahlen = facilityService.ladeKennzahlen();

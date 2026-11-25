@@ -2,6 +2,7 @@ package com.hsbi.hotelverwaltung.zimmerstatus.ui;
 
 import com.hsbi.hotelverwaltung.domain.Reinigungsstatus;
 import com.hsbi.hotelverwaltung.domain.Zimmerstatus;
+import com.hsbi.hotelverwaltung.zimmerstatus.ReinigungService;
 import com.hsbi.hotelverwaltung.zimmerstatus.ZimmerInfo;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -68,6 +69,19 @@ final class Anzeige {
                 .set("width", "100%")
                 .set("box-sizing", "border-box");
         return kasten;
+    }
+
+    /** Informationsmeldung an den Mitarbeiter über die letzte tägliche Reinigung (UC25, Schritt 6). */
+    static String reinigungstext(ReinigungService.Reinigungsergebnis ergebnis) {
+        String datum = ergebnis.datum().format(DATUM);
+        String versand = ergebnis.versendet() ? "" : " Achtung: Die Liste konnte nicht an das Reinigungsteam geschickt werden.";
+        if (!ergebnis.abgeschlossen()) {
+            return "Reinigung " + datum + " läuft: " + ergebnis.anzahlAufListe()
+                    + " Zimmer auf der Liste, Status werden um 12 Uhr angepasst." + versand;
+        }
+        return "Reinigung " + datum + " abgeschlossen (" + ergebnis.abgeschlossenUm().format(ZEITPUNKT) + "): "
+                + ergebnis.anzahlGereinigt() + " Zimmer gereinigt, "
+                + ergebnis.anzahlNeuZuReinigen() + " Zimmer wieder „zu reinigen“." + versand;
     }
 
     /** Grüne Erfolgsmeldung unten links. */
