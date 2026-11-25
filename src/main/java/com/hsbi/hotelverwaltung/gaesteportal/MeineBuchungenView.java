@@ -11,7 +11,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,33 +22,37 @@ import java.util.Optional;
 // Ein Klick auf eine Zeile öffnet die Details.
 //
 // @Route: Die Seite ist unter http://localhost:8080/meine-buchungen erreichbar.
-//   layout = GaesteportalLayout.class: Die Seite erscheint mit der Menüleiste des Gästeportals.
+//   layout = GaesteportalLayout.class: Die Seite erscheint im Rahmen des Gästeportals
+//   (Kopfzeile mit Abmelden oben, Menü links).
 // @PageTitle: Text im Browser-Tab.
-// @AnonymousAllowed: Jeder darf die Seite öffnen. Nur vorübergehend, bis es den Login gibt.
-//   Danach wird daraus @RolesAllowed("GAST").
+// @RolesAllowed("GAST"): Nur angemeldete Gäste dürfen die Seite öffnen.
+//   Wer nicht angemeldet ist, landet automatisch auf der Login-Seite.
 // extends VerticalLayout: Die Seite ordnet ihre Bestandteile untereinander an.
 @Route(value = "meine-buchungen", layout = GaesteportalLayout.class)
 @PageTitle("Meine Buchungen | Hotel Sparrenhof")
-@AnonymousAllowed
+@RolesAllowed("GAST")
 public class MeineBuchungenView extends VerticalLayout {
 
     private final GaesteportalService gaesteportalService;
 
-    // Konstruktor: Wird jedes Mal aufgerufen, wenn jemand die Seite öffnet.
-    // Spring übergibt AktuellerGast und GaesteportalService automatisch.
+    // Konstruktor: Wird jedes Mal aufgerufen, wenn ein angemeldeter Gast die Seite öffnet.
+    // Spring übergibt AktuellerGast und GaesteportalService automatisch (Dependency Injection).
     public MeineBuchungenView(AktuellerGast aktuellerGast, GaesteportalService gaesteportalService) {
         this.gaesteportalService = gaesteportalService;
 
         add(new H2("Meine Buchungen"));
 
-        // Schritt 1: Wer ist angemeldet?
+        // Schritt 1: Wer ist angemeldet? AktuellerGast fragt dafür den Login (Spring Security).
+        // Leer ist das Ergebnis nur, wenn es zum angemeldeten Konto kein Gästeprofil gibt.
+        // Dann zeigen wir einen Hinweis, statt dass die Seite abstürzt.
         Optional<Gast> gast = aktuellerGast.get();
         if (gast.isEmpty()) {
             add(new Paragraph("Bitte melde dich an, um deine Buchungen zu sehen."));
             return;
         }
 
-        // Schritt 2: Buchungen über den Service laden.
+        // Schritt 2: Buchungen über den Service laden. Er liefert nur die Buchungen dieses Gastes,
+        // fertig sortiert (anstehende zuerst).
         List<Buchung> buchungen = gaesteportalService.eigeneBuchungen(gast.get(), LocalDate.now());
 
         // Schritt 3: Je nach Ergebnis Hinweis oder Tabelle anzeigen.
@@ -60,6 +64,7 @@ public class MeineBuchungenView extends VerticalLayout {
     }
 
     // UC18 E1: Der Gast hat noch nichts gebucht. Er bekommt einen Button zur Zimmersuche.
+    // Die Zimmersuche (UC16) baut Gruppe 2. Bis es sie gibt, führt der Button noch ins Leere.
     private void zeigeHinweisKeineBuchung() {
         Button zurSuche = new Button("Zimmer suchen",
                 klick -> UI.getCurrent().navigate(GaesteportalLayout.ROUTE_ZIMMERSUCHE));
