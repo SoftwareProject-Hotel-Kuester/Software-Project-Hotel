@@ -28,7 +28,7 @@ public record ZimmerInfo(
         LocalDate gemeldetAm,
         Defektmeldung.Quelle gemeldetVon) {
 
-    /** Baut die Lesesicht aus einem Zimmer und seiner neuesten offenen Meldung (darf {@code null} sein). */
+    /** Baut die Lesesicht aus einem Zimmer und seiner neuesten offenen Meldung. */
     public static ZimmerInfo von(Zimmer zimmer, Defektmeldung offeneMeldung) {
         return new ZimmerInfo(
                 zimmer.getZimmerNr(),
