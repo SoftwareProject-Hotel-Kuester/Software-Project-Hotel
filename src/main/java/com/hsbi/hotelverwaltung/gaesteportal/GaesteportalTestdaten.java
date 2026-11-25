@@ -10,18 +10,24 @@ import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.ZimmerRepository;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerTestdaten;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 // Diese Klasse legt beim Start der App Testdaten für das Gästeportal an:
 // zwei Gäste und ihre Buchungen. Gehört zu UC18 ZeigeEigeneBuchungen.
 //
-// - Max Mustermann (wie im Mockup) hat eine vergangene, eine anstehende und eine stornierte Buchung.
+// - Max Mustermann (wie im Mockup) hat eine vergangene, zwei anstehende und eine stornierte Buchung.
+//   Die anstehenden kann er stornieren (UC20).
 // - Erika Musterfrau hat eine eigene Buchung. Damit lässt sich zeigen,
 //   dass Max ihre Buchung nicht sehen kann.
+// - Gina Gast (gast@sparrenhof.test, aus BenutzerTestdaten) bekommt zwei anstehende Buchungen,
+//   damit man UC20 auch mit ihr testen kann. Siehe buchungenFuerGinaAnlegen().
 //
 // Beide können sich anmelden, mit ihrer E-Mail und dem Passwort "Test1234!"
 // (dasselbe Passwort wie bei den Testkonten aus BenutzerTestdaten).
@@ -34,6 +40,9 @@ public class GaesteportalTestdaten implements CommandLineRunner {
 
     // E-Mail des Test-Gastes Max.
     static final String TESTGAST_EMAIL = "max.mustermann@example.com";
+
+    // E-Mail von Gina. Sie wird in BenutzerTestdaten (security) angelegt, nicht hier.
+    private static final String GINA_EMAIL = "gast@sparrenhof.test";
 
     // Passwort der Test-Gäste. Nur für die Entwicklung, nie für eine echte Installation.
     private static final String TEST_PASSWORT = "Test1234!";
@@ -73,6 +82,7 @@ public class GaesteportalTestdaten implements CommandLineRunner {
         Zimmer zimmer101 = zimmerRepository.findById(101).orElseThrow();   // Einzel, Economy
         Zimmer zimmer202 = zimmerRepository.findById(202).orElseThrow();   // Doppel, Standard
         Zimmer zimmer303 = zimmerRepository.findById(303).orElseThrow();   // Familie, Premium
+        Zimmer zimmer201 = zimmerRepository.findById(201).orElseThrow();   // Einzel, Standard
 
         // Schritt 3: Die beiden Gäste anlegen.
         Gast max = gastAnlegen(TESTGAST_EMAIL, "Max", "Mustermann", LocalDate.of(1990, 5, 12),
@@ -94,10 +104,41 @@ public class GaesteportalTestdaten implements CommandLineRunner {
 
         Buchung vonErika = new Buchung(erika, zimmer303, heute.plusDays(3), heute.plusDays(5), new BigDecimal("500.00"));
 
+        // Zweite anstehende Buchung von Max, damit man UC20 (Stornieren) mehr als einmal ausprobieren kann.
+        Buchung zumStornieren = new Buchung(max, zimmer201, heute.plusDays(20), heute.plusDays(22), new BigDecimal("180.00"));
+
         buchungRepository.save(vergangen);
         buchungRepository.save(anstehend);
         buchungRepository.save(storniert);
         buchungRepository.save(vonErika);
+        buchungRepository.save(zumStornieren);
+    }
+
+    // UC20: Gina bekommt zwei anstehende Buchungen, die sie stornieren kann.
+    // @EventListener(ApplicationReadyEvent.class): Spring ruft die Methode auf, wenn die App
+    // komplett gestartet ist. Dann haben alle anderen Testdaten-Klassen Gina und die Zimmer
+    // sicher schon angelegt.
+    // Hat Gina noch eine Buchung mit Status "gebucht", passiert nichts. Hat sie alle storniert,
+    // bekommt sie beim nächsten Start neue. So kann man immer wieder testen.
+    @EventListener(ApplicationReadyEvent.class)
+    public void buchungenFuerGinaAnlegen() {
+        Optional<Gast> gina = gastRepository.findByEmail(GINA_EMAIL);
+        if (gina.isEmpty()) {
+            return;
+        }
+
+        for (Buchung buchung : buchungRepository.findByGast(gina.get())) {
+            if (buchung.getStatus() == Buchungsstatus.GEBUCHT) {
+                return;
+            }
+        }
+
+        LocalDate heute = LocalDate.now();
+        Zimmer zimmer103 = zimmerRepository.findById(103).orElseThrow();   // Familie, Economy
+        Zimmer zimmer301 = zimmerRepository.findById(301).orElseThrow();   // Einzel, Premium
+
+        buchungRepository.save(new Buchung(gina.get(), zimmer103, heute.plusDays(10), heute.plusDays(12), new BigDecimal("300.00")));
+        buchungRepository.save(new Buchung(gina.get(), zimmer301, heute.plusDays(25), heute.plusDays(28), new BigDecimal("450.00")));
     }
 
     // Legt einen Gast mit Konto an und speichert ihn.
