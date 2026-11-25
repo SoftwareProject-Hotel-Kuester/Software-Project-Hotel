@@ -1,20 +1,18 @@
 package com.hsbi.hotelverwaltung.gaesteportal;
 
-import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.router.RouterLink;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.layout.Kopfzeile;
+import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 
-// Gemeinsamer Rahmen für alle Seiten des Gästeportals (wie im Mockup):
-// links der Hotelname, rechts das Menü "Zimmersuche · Meine Buchungen · Profil".
+// Gemeinsamer Rahmen für alle Seiten des Gästeportals:
+// oben die gemeinsame Kopfzeile (mit Anmelden/Abmelden), links das Menü
+// "Startseite · Zimmersuche · Meine Buchungen · Profil".
 //
 // Eine Seite erscheint in diesem Rahmen, wenn sie
 // @Route(value = "...", layout = GaesteportalLayout.class) angibt.
@@ -28,7 +26,9 @@ public class GaesteportalLayout extends AppLayout {
     static final String ROUTE_ZIMMERSUCHE = "zimmersuche";   // UC16, Gruppe 2
     static final String ROUTE_PROFIL = "profil";             // UC21, Gästeportal
 
-    // Spring übergibt AuthenticationContext und Repository automatisch.
+    // Spring übergibt AuthenticationContext und BenutzerRepository automatisch.
+    // Beides braucht die gemeinsame Kopfzeile aus dem Paket layout,
+    // um den Namen des angemeldeten Benutzers und den Abmelden-Button anzuzeigen.
     public GaesteportalLayout(AuthenticationContext authContext,
                               BenutzerRepository benutzerRepository) {
 
@@ -41,19 +41,5 @@ public class GaesteportalLayout extends AppLayout {
         // Kopfzeile oben (mit Anmelden/Abmelden), Menü in der linken Seitenleiste.
         addToNavbar(new DrawerToggle(), new Kopfzeile("Gästeportal", authContext, benutzerRepository));
         addToDrawer(new VerticalLayout(startseite, zimmersuche, meineBuchungen, profil));
-
-        // ---- Alt, wird nicht mehr gebraucht (Kopfzeile übernimmt das) ----
-        // H3 hotelname = new H3("Hotel Sparrenhof")
-        //
-        // HorizontalLayout menue = new HorizontalLayout(zimmersuche, meineBuchungen, profil);
-        //
-        // // Kopfzeile: Hotelname links, Menü rechts.
-        // HorizontalLayout kopfzeile = new HorizontalLayout(hotelname, menue);
-        // kopfzeile.setWidthFull();
-        // kopfzeile.setAlignItems(FlexComponent.Alignment.CENTER);
-        // kopfzeile.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        // kopfzeile.getStyle().set("padding", "0 1.5rem");
-        //
-        // addToNavbar(kopfzeile);
     }
 }

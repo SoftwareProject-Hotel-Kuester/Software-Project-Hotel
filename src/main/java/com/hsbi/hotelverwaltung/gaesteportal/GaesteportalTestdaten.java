@@ -10,6 +10,7 @@ import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.ZimmerRepository;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerTestdaten;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -22,27 +23,38 @@ import java.time.LocalDate;
 // - Erika Musterfrau hat eine eigene Buchung. Damit lässt sich zeigen,
 //   dass Max ihre Buchung nicht sehen kann.
 //
+// Beide können sich anmelden, mit ihrer E-Mail und dem Passwort "Test1234!"
+// (dasselbe Passwort wie bei den Testkonten aus BenutzerTestdaten).
+//
 // Die Zimmer legen wir nicht selbst an, sondern nutzen die aus ZimmerTestdaten (101 bis 303).
 //
 // @Component + CommandLineRunner: Spring ruft run(...) einmal auf, sobald die App gestartet ist.
 @Component
 public class GaesteportalTestdaten implements CommandLineRunner {
 
-    // E-Mail des Test-Gastes. AktuellerGast nutzt sie, solange es keinen Login gibt.
+    // E-Mail des Test-Gastes Max.
     static final String TESTGAST_EMAIL = "max.mustermann@example.com";
+
+    // Passwort der Test-Gäste. Nur für die Entwicklung, nie für eine echte Installation.
+    private static final String TEST_PASSWORT = "Test1234!";
 
     private final GastRepository gastRepository;
     private final ZimmerRepository zimmerRepository;
     private final BuchungRepository buchungRepository;
     private final ZimmerTestdaten zimmerTestdaten;
+    // PasswordEncoder: verschlüsselt das Passwort, bevor es gespeichert wird.
+    // Im Klartext darf es nie in der Datenbank stehen.
+    private final PasswordEncoder passwordEncoder;
 
-    // Konstruktor: Spring übergibt alle Repositories und ZimmerTestdaten automatisch.
+    // Konstruktor: Spring übergibt alle Repositories, ZimmerTestdaten und den PasswordEncoder automatisch.
     public GaesteportalTestdaten(GastRepository gastRepository, ZimmerRepository zimmerRepository,
-                                 BuchungRepository buchungRepository, ZimmerTestdaten zimmerTestdaten) {
+                                 BuchungRepository buchungRepository, ZimmerTestdaten zimmerTestdaten,
+                                 PasswordEncoder passwordEncoder) {
         this.gastRepository = gastRepository;
         this.zimmerRepository = zimmerRepository;
         this.buchungRepository = buchungRepository;
         this.zimmerTestdaten = zimmerTestdaten;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Wird einmal nach dem Start der App aufgerufen.
@@ -93,6 +105,7 @@ public class GaesteportalTestdaten implements CommandLineRunner {
     // Gibt zurück: den gespeicherten Gast.
     private Gast gastAnlegen(String email, String vorname, String nachname, LocalDate geburtsdatum, Adresse adresse) {
         Gast gast = new Gast(email, vorname, nachname, geburtsdatum);
+        gast.setPasswort(passwordEncoder.encode(TEST_PASSWORT));
         gast.setAktiv(true);
         gast.setTelefon("0521 123456");
         gast.setAdresse(adresse);
