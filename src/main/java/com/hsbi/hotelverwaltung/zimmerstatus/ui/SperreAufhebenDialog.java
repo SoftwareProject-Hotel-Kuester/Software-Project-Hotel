@@ -18,9 +18,9 @@ import com.vaadin.flow.component.textfield.TextArea;
 import java.util.List;
 
 /**
- * UC27 HebeZimmersperreAuf: zeigt alle gesperrten Zimmer mit Grund (Schritt 2).
- * Nach "Entsperren" und Bestätigung mit optionalem Vermerk (Schritte 4 und 5)
- * ist die Sperre beendet und das Zimmer steht auf "zu reinigen" (Schritt 6).
+ * UC27 HebeZimmersperreAuf: zeigt alle gesperrten Zimmer mit Grund.
+ * Nach "Entsperren" und Bestätigung mit optionalem Vermerk
+ * ist die Sperre beendet und das Zimmer steht auf "zu reinigen".
  */
 class SperreAufhebenDialog extends Dialog {
 

@@ -24,7 +24,7 @@ final class Anzeige {
     private Anzeige() {
     }
 
-    /** Kennzeichen für die Belegung: frei, belegt, gesperrt. */
+    /** Kennzeichen für die Belegung: frei, belegt oder gesperrt. */
     static Span status(Zimmerstatus status) {
         return switch (status) {
             case BELEGT -> kennzeichen(status.getBezeichnung(), "#1e4fd8", "#e3ebff");
@@ -42,7 +42,7 @@ final class Anzeige {
         };
     }
 
-    /** Kasten mit Sperrgrund und Herkunft, wird beim Öffnen eines gesperrten Zimmers gezeigt (UC26). */
+    /** Sperrgrund und Herkunft, wird beim Öffnen eines gesperrten Zimmers gezeigt (UC26). */
     static Div sperrgrund(ZimmerInfo zimmer) {
         Span titel = new Span("Sperrgrund");
         titel.getStyle().set("font-weight", "600");

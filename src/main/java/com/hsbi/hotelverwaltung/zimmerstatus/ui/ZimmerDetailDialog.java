@@ -14,8 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 /**
  * Ein geöffnetes Zimmer mit allen Daten. Bei gesperrten Zimmern steht der Sperrgrund
- * darunter (UC26, Schritt 7). Von hier aus geht es zum Sperren (UC26) und
- * Entsperren (UC27).
+ * darunter. Weiter mit Sperren (UC26) und Entsperren (UC27).
  */
 class ZimmerDetailDialog extends Dialog {
 

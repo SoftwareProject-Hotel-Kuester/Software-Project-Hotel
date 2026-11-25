@@ -85,7 +85,7 @@ public class Defektmeldung {
         }
     }
 
-    /** UC27 ohne Vermerk (wie im Klassendiagramm). */
+    /** UC27 ohne Vermerk. */
     public void alsErledigtMarkieren() {
         alsErledigtMarkieren(null);
     }

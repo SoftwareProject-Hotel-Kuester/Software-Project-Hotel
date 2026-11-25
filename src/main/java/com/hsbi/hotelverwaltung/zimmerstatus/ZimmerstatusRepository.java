@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Abfragen auf die gemeinsame Zimmer-Tabelle, die nur der Zimmerstatus braucht.
- * Eigenes Repository, damit das gemeinsame {@code domain.ZimmerRepository}
+ * Eigenes Repository, damit das gemeinsame {@code ZimmerRepository}
  * unverändert bleibt. Spring Data erzeugt die Abfragen aus den Methodennamen.
  */
 public interface ZimmerstatusRepository extends JpaRepository<Zimmer, Integer> {
