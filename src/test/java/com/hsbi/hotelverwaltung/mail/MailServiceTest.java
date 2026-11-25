@@ -43,6 +43,18 @@ class MailServiceTest {
         assertTrue(mail.getText().contains("http://localhost:8080/login"));
     }
 
+    // UC20: Die Stornobestätigung nennt Buchungsnummer und Zeitraum.
+    @Test
+    void stornobestaetigungEnthaeltBuchungsnummerUndZeitraum() {
+        mailService.sendeStornobestaetigung("max@example.com", "Max", 7, 202,
+                "15.06.2027 bis 18.06.2027");
+
+        SimpleMailMessage mail = gesendeteMail();
+        assertArrayEquals(new String[]{"max@example.com"}, mail.getTo());
+        assertTrue(mail.getSubject().contains("7"));
+        assertTrue(mail.getText().contains("15.06.2027 bis 18.06.2027"));
+    }
+
     // Holt die Mail, die der MailService an die Attrappe übergeben hat.
     private SimpleMailMessage gesendeteMail() {
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);

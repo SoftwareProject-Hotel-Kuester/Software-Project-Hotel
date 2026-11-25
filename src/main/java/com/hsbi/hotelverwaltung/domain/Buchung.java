@@ -16,8 +16,8 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * Eine Buchung eines Gastes für ein Zimmer und einen Zeitraum.
- * Fachliche Methoden wie stornieren() oder einchecken() ergänzen die
- * Gruppen 3 und 4. Hier steht nur, was alle brauchen.
+ * stornieren() kommt aus UC20 und kann auch für UC10 genutzt werden.
+ * Weitere fachliche Methoden wie einchecken() ergänzen die Gruppen 3 und 4.
  */
 @Entity
 public class Buchung {
@@ -83,6 +83,19 @@ public class Buchung {
      */
     public boolean kannVomGastGeaendertWerden(LocalDate heute) {
         return status == Buchungsstatus.GEBUCHT && anreise.isAfter(heute);
+    }
+
+    /**
+     * Storniert die Buchung (UC20, später auch UC10 durch Mitarbeiter).
+     * Nur eine Buchung im Status "gebucht" kann storniert werden.
+     * Das Zimmer ist danach automatisch wieder frei, weil die
+     * Verfügbarkeitsprüfung stornierte Buchungen nicht mitzählt.
+     */
+    public void stornieren() {
+        if (status != Buchungsstatus.GEBUCHT) {
+            throw new IllegalStateException("Nur gebuchte Buchungen können storniert werden.");
+        }
+        status = Buchungsstatus.STORNIERT;
     }
 
     public Integer getBuchungsNr() {
