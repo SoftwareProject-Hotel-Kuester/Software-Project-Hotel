@@ -5,6 +5,7 @@ import com.hsbi.hotelverwaltung.startseite.MitarbeiterStartView;
 import com.hsbi.hotelverwaltung.domain.BenutzerRepository;
 import com.hsbi.hotelverwaltung.gast.ui.GastAnlegenView;
 import com.hsbi.hotelverwaltung.gast.ui.GastBearbeitenView;
+import com.hsbi.hotelverwaltung.preis.PreisverwaltungView;
 import com.hsbi.hotelverwaltung.verfuegbarkeit.VerfuegbarkeitView;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerverwaltungView;
 import com.hsbi.hotelverwaltung.zimmerstatus.ui.ZimmerstatusView;
@@ -64,7 +65,7 @@ public class MitarbeiterLayout extends AppLayout {
         if (authContext.hasRole("HOTELLEITUNG")) {
             menue.add(gruppe("Verwaltung",
                     eintrag("Zimmerverwaltung", ZimmerverwaltungView.class),
-                    eintrag("Preise", null),
+                    eintrag("Preise", PreisverwaltungView.class),
                     eintrag("Kosten", null),
                     eintrag("Mitarbeiter & Rollen", null),
                     eintrag("Statistik & Export", null)));

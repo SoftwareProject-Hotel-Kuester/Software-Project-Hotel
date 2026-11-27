@@ -79,13 +79,14 @@ class Zimmer #E6F4EA {
 }
 
 class Preis #E6F4EA {
+    - preisNr: int
     - nachtpreis: BigDecimal
     - zimmerklasse: Zimmerklasse
     - belegungsart: Belegungsart
     - gueltigAb: LocalDate
     - gueltigBis: LocalDate
-    + aendern(neuerNachtpreis: BigDecimal): void
     + giltAm(datum: LocalDate): boolean
+    + beenden(letzterTag: LocalDate): void
 }
 
 class Defektmeldung #E6F4EA {

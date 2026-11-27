@@ -7,6 +7,7 @@ import com.hsbi.hotelverwaltung.gast.ui.GastAnlegenView;
 import com.hsbi.hotelverwaltung.gast.ui.GastBearbeitenView;
 import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
 import com.hsbi.hotelverwaltung.verfuegbarkeit.VerfuegbarkeitView;
+import com.hsbi.hotelverwaltung.preis.PreisverwaltungView;
 import com.hsbi.hotelverwaltung.zimmer.ZimmerverwaltungView;
 import com.hsbi.hotelverwaltung.zimmerstatus.ui.ZimmerstatusView;
 import com.vaadin.flow.component.html.Div;
@@ -63,6 +64,8 @@ public class MitarbeiterStartView extends VerticalLayout {
         if (authContext.hasRole("HOTELLEITUNG")) {
             raster.add(new Kachel("Zimmerverwaltung", "Zimmer anlegen, ändern und löschen.",
                     ZimmerverwaltungView.class));
+            raster.add(new Kachel("Preise", "Nachtpreise je Klasse und Belegungsart pflegen.",
+                    PreisverwaltungView.class));
         }
 
         add(new H2("Willkommen, " + vorname + "!"), new Paragraph(heute), raster);
