@@ -15,10 +15,15 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.hsbi.hotelverwaltung.layout.MitarbeiterLayout;
+import com.hsbi.hotelverwaltung.preis.Preis;
+import com.hsbi.hotelverwaltung.preis.PreisService;
 import jakarta.annotation.security.RolesAllowed;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Gehört zu UC04 (PrüfeVerfügbarkeit).
@@ -34,7 +39,19 @@ import java.util.List;
 @RolesAllowed({"MITARBEITER", "HOTELLEITUNG"})
 public class VerfuegbarkeitView extends VerticalLayout {
 
+    // Geldformat für Deutschland, z. B. "120,00 €".
+    private static final NumberFormat GELDFORMAT = NumberFormat.getCurrencyInstance(Locale.GERMANY);
+
     private final VerfuegbarkeitService verfuegbarkeitService;
+
+    // Liefert Nachtpreis und Gesamtpreis für die Tabelle (UC03 und UC05).
+    private final PreisService preisService;
+
+    // Der Zeitraum der letzten Suche. Die Preise in der Tabelle werden damit berechnet.
+    // Grund: Ändert jemand nach der Suche das Datum, sollen die Preise trotzdem
+    // zu den angezeigten Zimmern passen und nicht zum neuen, noch nicht gesuchten Datum.
+    private LocalDate gesuchteAnreise;
+    private LocalDate gesuchteAbreise;
 
     private final DatePicker anreise = new DatePicker("Anreise");
     private final DatePicker abreise = new DatePicker("Abreise");
@@ -43,8 +60,9 @@ public class VerfuegbarkeitView extends VerticalLayout {
     private final Grid<Zimmer> tabelle = new Grid<>();
     private final Paragraph hinweis = new Paragraph();
 
-    public VerfuegbarkeitView(VerfuegbarkeitService verfuegbarkeitService) {
+    public VerfuegbarkeitView(VerfuegbarkeitService verfuegbarkeitService, PreisService preisService) {
         this.verfuegbarkeitService = verfuegbarkeitService;
+        this.preisService = preisService;
 
         // Auswahllisten füllen. Leer lassen bedeutet "kein Filter".
         belegungsart.setItems(Belegungsart.values());
@@ -68,8 +86,9 @@ public class VerfuegbarkeitView extends VerticalLayout {
         tabelle.addColumn(Zimmer::getZimmerNr).setHeader("Zimmer");
         tabelle.addColumn(zimmer -> zimmer.getBelegungsart().getBezeichnung()).setHeader("Belegungsart");
         tabelle.addColumn(zimmer -> zimmer.getZimmerklasse().getBezeichnung()).setHeader("Zimmerklasse");
-        // Der Nachtpreis kommt aus UC03/UC05 (Preise). Bis es die Preise gibt, bleibt die Spalte leer.
-        tabelle.addColumn(zimmer -> "–").setHeader("Nachtpreis");
+        // Nachtpreis am Anreisetag (UC03) und Gesamtpreis für den ganzen Aufenthalt (UC05).
+        tabelle.addColumn(this::nachtpreisText).setHeader("Nachtpreis");
+        tabelle.addColumn(this::gesamtpreisText).setHeader("Gesamtpreis");
         tabelle.setVisible(false);
 
         add(new H2("Verfügbarkeit prüfen"), formular, hinweis, tabelle);
@@ -81,6 +100,10 @@ public class VerfuegbarkeitView extends VerticalLayout {
             List<Zimmer> freieZimmer = verfuegbarkeitService.findeFreieZimmer(
                     anreise.getValue(), abreise.getValue(),
                     belegungsart.getValue(), zimmerklasse.getValue());
+
+            // Zeitraum merken, damit die Preisspalten genau mit diesem Zeitraum rechnen.
+            gesuchteAnreise = anreise.getValue();
+            gesuchteAbreise = abreise.getValue();
 
             if (freieZimmer.isEmpty()) {
                 // UC04 E1: Kein Zimmer frei. Der Mitarbeiter kann den Filter ändern.
@@ -96,6 +119,33 @@ public class VerfuegbarkeitView extends VerticalLayout {
             // Ungültige Eingabe, z. B. Abreise vor Anreise: Meldung anzeigen
             tabelle.setVisible(false);
             hinweis.setText(fehler.getMessage());
+        }
+    }
+
+    // Text für die Spalte "Nachtpreis" (UC03).
+    // Zeigt den Preis für eine Nacht, der am Anreisetag für die Klasse und Belegungsart des Zimmers gilt.
+    // Bekommt: ein Zimmer aus der Tabelle. Gibt zurück: z. B. "120,00 €" oder "kein Preis".
+    private String nachtpreisText(Zimmer zimmer) {
+        Preis preis = preisService.preisAmTag(zimmer.getZimmerklasse(), zimmer.getBelegungsart(), gesuchteAnreise);
+
+        // Hat die Hotelleitung für diesen Tag keinen Preis eingetragen, gibt es keine Zahl.
+        if (preis == null) {
+            return "kein Preis";
+        }
+        return GELDFORMAT.format(preis.getNachtpreis());
+    }
+
+    // Text für die Spalte "Gesamtpreis" (UC05 BerechnePreis).
+    // Rechnet alle Nächte des gesuchten Zeitraums zusammen. Ändert sich der Preis
+    // während des Aufenthalts, zählt für jede Nacht ihr eigener Preis (UC05, E1).
+    // Bekommt: ein Zimmer aus der Tabelle. Gibt zurück: z. B. "370,00 €" oder "kein Preis".
+    private String gesamtpreisText(Zimmer zimmer) {
+        try {
+            BigDecimal gesamtpreis = preisService.berechnePreis(zimmer, gesuchteAnreise, gesuchteAbreise);
+            return GELDFORMAT.format(gesamtpreis);
+        } catch (IllegalArgumentException fehler) {
+            // UC05, E2: Für mindestens eine Nacht fehlt der Preis. Dann gibt es keinen Gesamtpreis.
+            return "kein Preis";
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.hsbi.hotelverwaltung.preis;
 
 import com.hsbi.hotelverwaltung.domain.Belegungsart;
+import com.hsbi.hotelverwaltung.domain.Zimmer;
 import com.hsbi.hotelverwaltung.domain.Zimmerklasse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,6 +105,51 @@ public class PreisService {
                         + ". Der neue Preis muss nach diesem Tag beginnen.");
             }
         }
+    }
+
+    // Berechnet den Gesamtpreis eines Aufenthalts (UC05 BerechnePreis).
+    // Jede Nacht wird mit dem Preis berechnet, der an diesem Tag gilt (UC05, E1).
+    // So stimmt der Preis auch, wenn sich der Nachtpreis mitten im Aufenthalt ändert.
+    // Wird von anderen Gruppen aufgerufen: Buchung durch Mitarbeiter (UC08, UC09),
+    // Zimmersuche und Buchung durch Gäste (UC16, UC17).
+    // Bekommt: das Zimmer, den Anreisetag und den Abreisetag.
+    // Gibt zurück: den Gesamtpreis aller Nächte.
+    // Wirft eine IllegalArgumentException, wenn die Abreise nicht nach der Anreise liegt
+    // oder wenn für eine Nacht kein Preis hinterlegt ist (UC05, E2).
+    public BigDecimal berechnePreis(Zimmer zimmer, LocalDate anreise, LocalDate abreise) {
+        // Schritt 1: Vorbedingung 2 prüfen. Ohne mindestens eine Nacht gibt es nichts zu berechnen.
+        if (anreise == null || abreise == null || !abreise.isAfter(anreise)) {
+            throw new IllegalArgumentException("Die Abreise muss nach der Anreise liegen.");
+        }
+
+        // Schritt 2: Jede Nacht einzeln durchgehen (UC05, Schritt 2).
+        // Eine Nacht wird nach dem Anreisetag benannt: Anreise 05.01., Abreise 07.01. = Nächte 05.01. und 06.01.
+        // Der Abreisetag selbst ist keine Nacht mehr, deshalb läuft die Schleife nur bis zum Vortag.
+        BigDecimal gesamtpreis = BigDecimal.ZERO;
+        LocalDate nacht = anreise;
+        while (nacht.isBefore(abreise)) {
+            // Den Preis holen, der in dieser Nacht für Klasse und Belegungsart des Zimmers gilt.
+            Preis preis = preisAmTag(zimmer.getZimmerklasse(), zimmer.getBelegungsart(), nacht);
+
+            // UC05, E2: Kein Preis hinterlegt → Fehler. Die Buchung darf dann nicht stattfinden,
+            // die Hotelleitung muss den Preis erst pflegen (UC03).
+            if (preis == null) {
+                throw new IllegalArgumentException("Für " + zimmer.getZimmerklasse().getBezeichnung() + " / "
+                        + zimmer.getBelegungsart().getBezeichnung() + " ist am "
+                        + nacht.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+                        + " kein Preis hinterlegt. Bitte die Hotelleitung informieren.");
+            }
+
+            // Den Nachtpreis zur Summe addieren (UC05, Schritt 3).
+            // BigDecimal ist unveränderlich: add gibt eine neue Zahl zurück, deshalb die Zuweisung.
+            gesamtpreis = gesamtpreis.add(preis.getNachtpreis());
+
+            // Zur nächsten Nacht weitergehen.
+            nacht = nacht.plusDays(1);
+        }
+
+        // Schritt 3: Gesamtpreis zurückgeben. Gespeichert wird er erst mit der Buchung (Nachbedingung UC05).
+        return gesamtpreis;
     }
 
     // Sucht den Preis, der direkt nach einem Preis kommt (für die Spalte "Folgepreis" in der Preisliste).
