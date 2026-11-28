@@ -69,7 +69,7 @@ map "<i>Buchung</i>" as Buchung {
 }
 
 map "<i>Preis</i>" as Preis {
-  <i>PK</i>\n<i>PK</i>\n<i>PK</i>\n\n => <u>ZIMMERKLASSE</u>\n<u>BELEGUNGSART</u>\n<u>GUELTIG_AB</u>\nGUELTIG_BIS\nNACHTPREIS
+  <i>PK</i>\n\n\n\n\n => <u>PREIS_NR</u>\nZIMMERKLASSE\nBELEGUNGSART\nGUELTIG_AB\nGUELTIG_BIS\nNACHTPREIS
 }
 
 map "<i>Zimmer</i>" as Zimmer {
