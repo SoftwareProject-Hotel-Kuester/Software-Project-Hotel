@@ -22,6 +22,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 
@@ -113,7 +114,10 @@ public class VerfuegbarkeitView extends VerticalLayout {
             } else {
                 tabelle.setItems(freieZimmer);
                 tabelle.setVisible(true);
-                hinweis.setText(freieZimmer.size() + " freie(s) Zimmer gefunden.");
+                // UC05, Nachbedingung: Neben Nachtpreis und Gesamtpreis wird auch die Anzahl der Nächte angezeigt.
+                // ChronoUnit.DAYS.between zählt die Tage zwischen Anreise und Abreise, das sind genau die Nächte.
+                long naechte = ChronoUnit.DAYS.between(gesuchteAnreise, gesuchteAbreise);
+                hinweis.setText(freieZimmer.size() + " freie(s) Zimmer für " + naechte + " Nacht/Nächte gefunden.");
             }
         } catch (IllegalArgumentException fehler) {
             // Ungültige Eingabe, z. B. Abreise vor Anreise: Meldung anzeigen
